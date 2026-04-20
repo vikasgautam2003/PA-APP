@@ -16,6 +16,8 @@ export default function DSAPage() {
     totalDone,
     isLoading,
     updateStatus,
+    addNote,
+    getNotes,
   } = useDSA();
 
   return (
@@ -58,6 +60,8 @@ export default function DSAPage() {
                 key={q.id}
                 question={q}
                 onStatusChange={updateStatus}
+                onAddNote={addNote}
+                onGetNotes={getNotes}
               />
             ))}
             {filtered.length > 100 && (

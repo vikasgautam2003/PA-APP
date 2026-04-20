@@ -158,9 +158,80 @@ pub fn run() {
                         misc          REAL DEFAULT 0,
                         savings_goal  REAL DEFAULT 0,
                         target_date   DATE,
+                        currency      TEXT DEFAULT '₹',
                         updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
                     )"
                 ).execute(&pool).await.expect("Failed to create finances table");
+
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS finance_transactions (
+                        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id    INTEGER REFERENCES users(id),
+                        amount     REAL NOT NULL,
+                        category   TEXT NOT NULL,
+                        note       TEXT DEFAULT '',
+                        date       DATE NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )"
+                ).execute(&pool).await.expect("Failed to create finance_transactions table");
+
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS finance_snapshots (
+                        id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id             INTEGER REFERENCES users(id),
+                        month               TEXT NOT NULL,
+                        total_spent         REAL DEFAULT 0,
+                        total_saved         REAL DEFAULT 0,
+                        actual_by_category  TEXT DEFAULT '{}',
+                        created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, month)
+                    )"
+                ).execute(&pool).await.expect("Failed to create finance_snapshots table");
+
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS planner_topics (
+                        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id     INTEGER REFERENCES users(id),
+                        title       TEXT NOT NULL,
+                        order_index INTEGER DEFAULT 0,
+                        created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )"
+                ).execute(&pool).await.expect("Failed to create planner_topics");
+
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS planner_subtopics (
+                        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                        topic_id      INTEGER REFERENCES planner_topics(id) ON DELETE CASCADE,
+                        user_id       INTEGER REFERENCES users(id),
+                        label         TEXT NOT NULL,
+                        timestamp_raw TEXT DEFAULT '',
+                        order_index   INTEGER DEFAULT 0,
+                        is_done       INTEGER DEFAULT 0,
+                        done_at       DATETIME,
+                        created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )"
+                ).execute(&pool).await.expect("Failed to create planner_subtopics");
+
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS planner_week_plans (
+                        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id      INTEGER REFERENCES users(id),
+                        week_start   DATE NOT NULL,
+                        plan_json    TEXT NOT NULL,
+                        generated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, week_start)
+                    )"
+                ).execute(&pool).await.expect("Failed to create planner_week_plans");
+
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS question_notes (
+                        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id     INTEGER REFERENCES users(id),
+                        question_id INTEGER REFERENCES dsa_questions(id),
+                        content     TEXT NOT NULL,
+                        created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )"
+                ).execute(&pool).await.expect("Failed to create question_notes");
 
                 app.manage(AppState { db: pool });
             });

@@ -103,11 +103,29 @@ export function useDSA() {
     [store.questions]
   );
 
+  async function addNote(questionId: number, content: string): Promise<void> {
+    const db = await getDb();
+    await db.execute(
+      "INSERT INTO question_notes (user_id, question_id, content) VALUES (?, ?, ?)",
+      [user!.id, questionId, content]
+    );
+  }
+
+  async function getNotes(questionId: number): Promise<import("@/types").QuestionNote[]> {
+    const db = await getDb();
+    return db.select(
+      "SELECT * FROM question_notes WHERE user_id = ? AND question_id = ? ORDER BY created_at DESC",
+      [user!.id, questionId]
+    );
+  }
+
   return {
     ...store,
     filtered,
     totalDone,
     updateStatus,
+    addNote,
+    getNotes,
     reload: loadQuestions,
   };
 }

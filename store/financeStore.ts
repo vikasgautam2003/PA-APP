@@ -1,16 +1,29 @@
 import { create } from "zustand";
-import type { FinanceData, SavingsProjection, ExpenseBreakdown, ChatMessage } from "@/types";
+import type {
+  FinanceData, SavingsProjection, ChatMessage,
+  Transaction, CategorySummary, ScenarioProjection, MonthlySnapshot,
+} from "@/types";
+
+type FinanceTab = "overview" | "transactions" | "predictions" | "settings";
 
 interface FinanceStore {
+  activeTab: FinanceTab;
   data: FinanceData;
   projection: SavingsProjection | null;
-  breakdown: ExpenseBreakdown[];
+  categorySummaries: CategorySummary[];
+  transactions: Transaction[];
+  snapshots: MonthlySnapshot[];
+  scenarios: ScenarioProjection[];
   messages: ChatMessage[];
   isLoading: boolean;
   isChatLoading: boolean;
+  setActiveTab: (t: FinanceTab) => void;
   setData: (d: FinanceData) => void;
   setProjection: (p: SavingsProjection) => void;
-  setBreakdown: (b: ExpenseBreakdown[]) => void;
+  setCategorySummaries: (s: CategorySummary[]) => void;
+  setTransactions: (t: Transaction[]) => void;
+  setSnapshots: (s: MonthlySnapshot[]) => void;
+  setScenarios: (s: ScenarioProjection[]) => void;
   addMessage: (m: ChatMessage) => void;
   clearChat: () => void;
   setLoading: (v: boolean) => void;
@@ -19,19 +32,28 @@ interface FinanceStore {
 
 const DEFAULT_DATA: FinanceData = {
   stipend: 0, rent: 0, food: 0, transport: 0,
-  subscriptions: 0, misc: 0, savings_goal: 0, target_date: null,
+  subscriptions: 0, misc: 0, savings_goal: 0,
+  target_date: null, currency: "₹",
 };
 
 export const useFinanceStore = create<FinanceStore>((set) => ({
+  activeTab: "overview",
   data: DEFAULT_DATA,
   projection: null,
-  breakdown: [],
+  categorySummaries: [],
+  transactions: [],
+  snapshots: [],
+  scenarios: [],
   messages: [],
   isLoading: false,
   isChatLoading: false,
+  setActiveTab: (activeTab) => set({ activeTab }),
   setData: (data) => set({ data }),
   setProjection: (projection) => set({ projection }),
-  setBreakdown: (breakdown) => set({ breakdown }),
+  setCategorySummaries: (categorySummaries) => set({ categorySummaries }),
+  setTransactions: (transactions) => set({ transactions }),
+  setSnapshots: (snapshots) => set({ snapshots }),
+  setScenarios: (scenarios) => set({ scenarios }),
   addMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
   clearChat: () => set({ messages: [] }),
   setLoading: (isLoading) => set({ isLoading }),
