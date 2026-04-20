@@ -1,11 +1,21 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "enables the default permissions",
-  "windows": [
-    "main"
-  ],
+  "description": "Default capabilities for DevKit",
+  "windows": ["main"],
   "permissions": [
-    "core:default"
+    "core:default",
+    "store:default",
+    "store:allow-load",
+    "store:allow-get",
+    "store:allow-set",
+    "store:allow-save",
+    "store:allow-delete",
+    "sql:default",
+    "sql:allow-load",
+    "sql:allow-execute",
+    "sql:allow-select",
+    "http:default",
+    "http:allow-fetch"
   ]
 }

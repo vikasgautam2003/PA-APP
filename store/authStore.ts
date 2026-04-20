@@ -18,33 +18,40 @@ export const useAuthStore = create<AuthStore>((set) => ({
   isAuthenticated: false,
   isLoading: true,
 
-  setUser: (user, session) =>
-    set({ user, session, isAuthenticated: true, isLoading: false }),
+  setUser: (user, session) => {
+  set({ user, session, isAuthenticated: true, isLoading: false });
+  import("@/lib/seed").then(({ seedDSAQuestions }) => seedDSAQuestions());
+},
 
   logout: async () => {
     await authLogout();
     set({ user: null, session: null, isAuthenticated: false });
   },
 
-  initialize: async () => {
-    try {
-      const session = await getSession();
-      if (session) {
-        set({
-          session,
-          user: {
-            id: session.user_id,
-            username: session.username,
-            created_at: "",
-          },
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } else {
-        set({ isLoading: false });
-      }
-    } catch {
+
+initialize: async () => {
+  try {
+    const session = await getSession();
+    if (session) {
+      set({
+        session,
+        user: {
+          id: session.user_id,
+          username: session.username,
+          created_at: "",
+        },
+        isAuthenticated: true,
+        isLoading: false,
+      });
+      // Seed questions after auth confirmed
+      const { seedDSAQuestions } = await import("@/lib/seed");
+      await seedDSAQuestions();
+    } else {
       set({ isLoading: false });
     }
-  },
+  } catch {
+    set({ isLoading: false });
+  }
+},
+
 }));
