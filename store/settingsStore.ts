@@ -1,15 +1,30 @@
 import { create } from "zustand";
 
+type Theme = "dark" | "light";
+
 interface SettingsStore {
-  isDark: boolean;
+  theme: Theme;
   geminiKey: string;
-  toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
   setGeminiKey: (key: string) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
-  isDark: true,
+  theme: "dark",
   geminiKey: "",
-  toggleTheme: () => set((s) => ({ isDark: !s.isDark })),
+  setTheme: (theme) => {
+    set({ theme });
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("devkit-theme", theme);
+    }
+  },
   setGeminiKey: (key) => set({ geminiKey: key }),
 }));
+
+export function initTheme() {
+  if (typeof document === "undefined") return;
+  const saved = (localStorage.getItem("devkit-theme") as Theme) ?? "dark";
+  document.documentElement.setAttribute("data-theme", saved);
+  useSettingsStore.setState({ theme: saved });
+}

@@ -1,25 +1,66 @@
 @import "tailwindcss";
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── DARK THEME (default) ─────────────────────────────── */
+:root, [data-theme="dark"] {
+  --bg-base:        #060608;
+  --bg-surface:     #0c0c10;
+  --bg-elevated:    #0e0e12;
+  --bg-hover:       #111116;
+  --border:         #18181c;
+  --border-subtle:  #232328;
+  --text-primary:   #f0f0f0;
+  --text-secondary: #9ca3af;
+  --text-muted:     #4b5563;
+  --text-faint:     #2a2a30;
+  --accent:         #2563eb;
+  --accent-glow:    #2563eb40;
+  --accent-text:    #60a5fa;
+  --easy:           #4ade80;
+  --easy-bg:        #16a34a18;
+  --medium:         #fbbf24;
+  --medium-bg:      #d9770618;
+  --hard:           #f87171;
+  --hard-bg:        #dc262618;
+  --sidebar-w:      220px;
+}
+
+/* ── LIGHT THEME ──────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-base:        #f8f9fb;
+  --bg-surface:     #ffffff;
+  --bg-elevated:    #ffffff;
+  --bg-hover:       #f5f7fa;
+  --border:         #e8eaed;
+  --border-subtle:  #f0f2f5;
+  --text-primary:   #0a0a0a;
+  --text-secondary: #374151;
+  --text-muted:     #6b7280;
+  --text-faint:     #d1d5db;
+  --accent:         #1d4ed8;
+  --accent-glow:    #1d4ed820;
+  --accent-text:    #1d4ed8;
+  --easy:           #16a34a;
+  --easy-bg:        #f0fdf4;
+  --medium:         #d97706;
+  --medium-bg:      #fffbeb;
+  --hard:           #dc2626;
+  --hard-bg:        #fef2f2;
 }
 
 html, body {
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
+  height: 100vh; width: 100vw; overflow: hidden;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-  font-size: 14px;
-  background: #ffffff;
-  color: #0a0a0a;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
-::-webkit-scrollbar { width: 4px; height: 4px; }
+* { transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease; }
+
+::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #e5e5e5; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #d4d4d4; }
-::selection { background: #dbeafe; color: #1d4ed8; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::selection { background: var(--accent-glow); color: var(--accent-text); }
