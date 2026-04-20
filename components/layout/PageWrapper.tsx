@@ -1,35 +1,33 @@
-import { cn } from "@/lib/utils";
-
-interface PageWrapperProps {
+interface Props {
   title: string;
   subtitle?: string;
   action?: React.ReactNode;
   children: React.ReactNode;
-  className?: string;
 }
 
-export default function PageWrapper({
-  title,
-  subtitle,
-  action,
-  children,
-  className,
-}: PageWrapperProps) {
+export default function PageWrapper({ title, subtitle, action, children }: Props) {
   return (
-    <div className="flex flex-col h-full">
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#fff" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-8 py-6 border-b border-[#1e1b4b] shrink-0">
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "18px 32px 16px",
+        borderBottom: "1px solid #f0f0f0",
+        flexShrink: 0,
+      }}>
         <div>
-          <h1 className="text-xl font-bold text-white">{title}</h1>
+          <h1 style={{ fontSize: 18, fontWeight: 600, color: "#0a0a0a", letterSpacing: "-0.02em" }}>
+            {title}
+          </h1>
           {subtitle && (
-            <p className="text-sm text-slate-400 mt-0.5">{subtitle}</p>
+            <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>{subtitle}</p>
           )}
         </div>
-        {action && <div>{action}</div>}
+        {action}
       </div>
 
-      {/* Content */}
-      <div className={cn("flex-1 overflow-y-auto px-8 py-6", className)}>
+      {/* Body */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
         {children}
       </div>
     </div>

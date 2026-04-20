@@ -1,4 +1,3 @@
-import { cn } from "@/lib/utils";
 import type { TopicProgress } from "@/types";
 
 interface Props {
@@ -8,49 +7,35 @@ interface Props {
 }
 
 export default function ProgressBar({ topicProgress, totalDone, total }: Props) {
-  const percent = total > 0 ? Math.round((totalDone / total) * 100) : 0;
+  const pct = total > 0 ? Math.round((totalDone / total) * 100) : 0;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
       {/* Overall */}
-      <div className="bg-[#1e1b4b]/40 border border-[#312e81] rounded-xl p-4">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-white">Overall Progress</span>
-          <span className="text-sm text-violet-300 font-bold">
-            {totalDone} / {total}
-          </span>
+      <div style={{ border: "1px solid #f0f0f0", borderRadius: 12, padding: 16, background: "#fff" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>Overall Progress</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#2563eb" }}>{totalDone} / {total}</span>
         </div>
-        <div className="w-full h-2 bg-[#312e81] rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-violet-600 to-violet-400 rounded-full transition-all duration-500"
-            style={{ width: `${percent}%` }}
-          />
+        <div style={{ height: 6, background: "#f3f4f6", borderRadius: 99, overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: "#2563eb", borderRadius: 99, transition: "width 0.6s ease" }} />
         </div>
-        <p className="text-xs text-slate-500 mt-1.5">{percent}% complete</p>
+        <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>{pct}% complete</p>
       </div>
 
-      {/* Per topic — show top 8 */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* Topics */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {topicProgress.slice(0, 8).map((t) => {
-          const pct = t.total > 0 ? Math.round((t.done / t.total) * 100) : 0;
+          const p = t.total > 0 ? Math.round((t.done / t.total) * 100) : 0;
           return (
-            <div
-              key={t.topic}
-              className="bg-[#1e1b4b]/20 border border-[#312e81]/50 rounded-lg p-3"
-            >
-              <div className="flex justify-between items-center mb-1.5">
-                <span className="text-xs text-slate-300 truncate max-w-[100px]">
-                  {t.topic}
-                </span>
-                <span className="text-xs text-slate-500">
-                  {t.done}/{t.total}
-                </span>
+            <div key={t.topic} style={{ border: "1px solid #f0f0f0", borderRadius: 10, padding: "10px 12px", background: "#fff" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 500, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 90 }}>{t.topic}</span>
+                <span style={{ fontSize: 11, color: "#9ca3af" }}>{t.done}/{t.total}</span>
               </div>
-              <div className="w-full h-1.5 bg-[#312e81] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-violet-500 rounded-full transition-all"
-                  style={{ width: `${pct}%` }}
-                />
+              <div style={{ height: 3, background: "#f3f4f6", borderRadius: 99 }}>
+                <div style={{ height: "100%", width: `${p}%`, background: "#2563eb", borderRadius: 99 }} />
               </div>
             </div>
           );

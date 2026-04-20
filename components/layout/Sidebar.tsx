@@ -3,15 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
-import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
-  { href: "/",         label: "Dashboard",  icon: "⬡" },
-  { href: "/dsa",      label: "DSA Tracker", icon: "◈" },
-  { href: "/prompts",  label: "Prompt Vault", icon: "◎" },
-  { href: "/planner",  label: "Planner",     icon: "◷" },
-  { href: "/finance",  label: "Finance",     icon: "◉" },
-  { href: "/settings", label: "Settings",    icon: "◌" },
+const NAV = [
+  { href: "/",         label: "Dashboard"   },
+  { href: "/dsa",      label: "DSA Tracker" },
+  { href: "/prompts",  label: "Prompt Vault"},
+  { href: "/planner",  label: "Planner"     },
+  { href: "/finance",  label: "Finance"     },
+  { href: "/settings", label: "Settings"    },
 ];
 
 export default function Sidebar() {
@@ -19,63 +18,86 @@ export default function Sidebar() {
   const { user, logout } = useAuthStore();
 
   return (
-    <aside
-      style={{ width: "var(--sidebar-width)" }}
-      className="h-screen flex flex-col bg-[#0a0820] border-r border-[#1e1b4b] shrink-0"
-    >
+    <aside style={{
+      width: 220,
+      minWidth: 220,
+      height: "100vh",
+      background: "#ffffff",
+      borderRight: "1px solid #e5e5e5",
+      display: "flex",
+      flexDirection: "column",
+      flexShrink: 0,
+    }}>
+
       {/* Logo */}
-      <div className="px-5 py-6 border-b border-[#1e1b4b]">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center text-xs font-bold">
-            D
-          </div>
-          <span className="font-bold text-sm tracking-wide text-white">
+      <div style={{ padding: "18px 16px 14px", borderBottom: "1px solid #f0f0f0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: 8,
+            background: "#2563eb",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 13, fontWeight: 700, color: "#fff",
+          }}>D</div>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "#0a0a0a", letterSpacing: "-0.01em" }}>
             DevKit
           </span>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
-        {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href;
+      <nav style={{ flex: 1, padding: "10px 8px", display: "flex", flexDirection: "column", gap: 1 }}>
+        {NAV.map(({ href, label }) => {
+          const active = pathname === href;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all",
-                active
-                  ? "bg-violet-600/20 text-violet-300 font-medium"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-              )}
+            <Link key={href} href={href} style={{
+              display: "flex",
+              alignItems: "center",
+              padding: "7px 10px",
+              borderRadius: 7,
+              fontSize: 13,
+              fontWeight: active ? 500 : 400,
+              color: active ? "#0a0a0a" : "#6b7280",
+              background: active ? "#f5f5f5" : "transparent",
+              textDecoration: "none",
+              borderLeft: active ? "2px solid #2563eb" : "2px solid transparent",
+              transition: "all 0.1s",
+            }}
+              onMouseEnter={(e) => {
+                if (!active) (e.currentTarget as HTMLElement).style.background = "#fafafa";
+              }}
+              onMouseLeave={(e) => {
+                if (!active) (e.currentTarget as HTMLElement).style.background = "transparent";
+              }}
             >
-              <span className="text-base leading-none">{item.icon}</span>
-              <span>{item.label}</span>
-              {active && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-400" />
-              )}
+              {label}
             </Link>
           );
         })}
       </nav>
 
       {/* User */}
-      <div className="px-3 py-4 border-t border-[#1e1b4b]">
-        <div className="flex items-center gap-3 px-3 py-2">
-          <div className="w-7 h-7 rounded-full bg-violet-700 flex items-center justify-center text-xs font-bold uppercase">
+      <div style={{ padding: "10px 8px", borderTop: "1px solid #f0f0f0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px" }}>
+          <div style={{
+            width: 26, height: 26, borderRadius: "50%",
+            background: "#2563eb",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 11, fontWeight: 700, color: "#fff",
+            textTransform: "uppercase", flexShrink: 0,
+          }}>
             {user?.username?.[0] ?? "?"}
           </div>
-          <span className="text-sm text-slate-300 flex-1 truncate">
+          <span style={{ fontSize: 13, color: "#374151", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {user?.username ?? "Guest"}
           </span>
-          <button
-            onClick={logout}
-            className="text-slate-500 hover:text-red-400 text-xs transition-colors"
+          <button onClick={logout} style={{
+            background: "none", border: "none", cursor: "pointer",
+            fontSize: 13, color: "#9ca3af", padding: 2,
+          }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#ef4444")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#9ca3af")}
             title="Logout"
-          >
-            ⏻
-          </button>
+          >⏻</button>
         </div>
       </div>
     </aside>

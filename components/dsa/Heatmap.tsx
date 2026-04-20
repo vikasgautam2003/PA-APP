@@ -1,80 +1,59 @@
 import type { HeatmapEntry } from "@/types";
-import { cn } from "@/lib/utils";
 
-interface Props {
-  heatmap: HeatmapEntry[];
+interface Props { heatmap: HeatmapEntry[]; }
+
+function getLast365Days() {
+  return Array.from({ length: 365 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (364 - i));
+    return d.toISOString().split("T")[0];
+  });
 }
 
-function getLast365Days(): string[] {
-  const days: string[] = [];
-  const today = new Date();
-  for (let i = 364; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    days.push(d.toISOString().split("T")[0]);
-  }
-  return days;
-}
-
-function getIntensity(count: number): string {
-  if (count === 0) return "bg-[#1e1b4b]/40";
-  if (count === 1) return "bg-violet-900";
-  if (count === 2) return "bg-violet-700";
-  if (count <= 4) return "bg-violet-500";
-  return "bg-violet-400";
+function color(n: number) {
+  if (n === 0) return "#f3f4f6";
+  if (n === 1) return "#bfdbfe";
+  if (n === 2) return "#93c5fd";
+  if (n <= 4)  return "#3b82f6";
+  return "#1d4ed8";
 }
 
 export default function Heatmap({ heatmap }: Props) {
   const days = getLast365Days();
-  const countMap = new Map(heatmap.map((h) => [h.date, h.count]));
-
-  // Group into weeks
+  const map  = new Map(heatmap.map((h) => [h.date, h.count]));
   const weeks: string[][] = [];
   let week: string[] = [];
-  days.forEach((day, i) => {
-    week.push(day);
-    if (week.length === 7 || i === days.length - 1) {
-      weeks.push(week);
-      week = [];
-    }
+  days.forEach((d, i) => {
+    week.push(d);
+    if (week.length === 7 || i === days.length - 1) { weeks.push(week); week = []; }
   });
 
-  const totalActive = heatmap.reduce((sum, h) => sum + h.count, 0);
-  const activeDays = heatmap.length;
-
   return (
-    <div className="bg-[#1e1b4b]/40 border border-[#312e81] rounded-xl p-4">
-      <div className="flex justify-between items-center mb-3">
-        <span className="text-sm font-medium text-white">Activity</span>
-        <span className="text-xs text-slate-500">
-          {totalActive} solved across {activeDays} days
+    <div style={{ border: "1px solid #f0f0f0", borderRadius: 12, padding: 16, background: "#fff" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: "#111827" }}>Activity</span>
+        <span style={{ fontSize: 11, color: "#9ca3af" }}>
+          {heatmap.reduce((s, h) => s + h.count, 0)} solved · {heatmap.length} days
         </span>
       </div>
-      <div className="flex gap-1 overflow-x-auto pb-1">
-        {weeks.map((week, wi) => (
-          <div key={wi} className="flex flex-col gap-1">
-            {week.map((day) => {
-              const count = countMap.get(day) ?? 0;
-              return (
-                <div
-                  key={day}
-                  title={`${day}: ${count} solved`}
-                  className={cn(
-                    "w-3 h-3 rounded-sm transition-colors",
-                    getIntensity(count)
-                  )}
-                />
-              );
-            })}
+      <div style={{ display: "flex", gap: 3, overflowX: "auto" }}>
+        {weeks.map((wk, i) => (
+          <div key={i} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {wk.map((d) => (
+              <div key={d} title={`${d}: ${map.get(d) ?? 0}`} style={{
+                width: 11, height: 11, borderRadius: 3,
+                background: color(map.get(d) ?? 0),
+              }} />
+            ))}
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-1 mt-2 justify-end">
-        <span className="text-xs text-slate-600">Less</span>
-        {["bg-[#1e1b4b]/40", "bg-violet-900", "bg-violet-700", "bg-violet-500", "bg-violet-400"].map((c) => (
-          <div key={c} className={cn("w-3 h-3 rounded-sm", c)} />
+      <div style={{ display: "flex", alignItems: "center", gap: 3, marginTop: 10, justifyContent: "flex-end" }}>
+        <span style={{ fontSize: 10, color: "#d1d5db" }}>Less</span>
+        {["#f3f4f6","#bfdbfe","#93c5fd","#3b82f6","#1d4ed8"].map((c) => (
+          <div key={c} style={{ width: 10, height: 10, borderRadius: 2, background: c }} />
         ))}
-        <span className="text-xs text-slate-600">More</span>
+        <span style={{ fontSize: 10, color: "#d1d5db" }}>More</span>
       </div>
     </div>
   );

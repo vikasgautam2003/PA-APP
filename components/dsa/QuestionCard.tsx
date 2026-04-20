@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import type { DSAQuestionWithProgress } from "@/types";
 
 interface Props {
@@ -8,98 +7,105 @@ interface Props {
   onStatusChange: (id: number, status: "todo" | "solving" | "done") => void;
 }
 
-const DIFF_STYLES: Record<string, string> = {
-  Easy:   "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
-  Medium: "text-amber-400 bg-amber-400/10 border-amber-400/20",
-  Hard:   "text-red-400 bg-red-400/10 border-red-400/20",
+const CYCLE: Record<string, "todo" | "solving" | "done"> = {
+  todo: "solving", solving: "done", done: "todo",
 };
 
-const STATUS_CYCLE: Record<string, "todo" | "solving" | "done"> = {
-  todo:    "solving",
-  solving: "done",
-  done:    "todo",
-};
-
-const STATUS_STYLES: Record<string, string> = {
-  todo:    "border-slate-700 bg-transparent",
-  solving: "border-amber-500 bg-amber-500/10",
-  done:    "border-emerald-500 bg-emerald-500/20",
-};
-
-const STATUS_ICON: Record<string, string> = {
-  todo:    "",
-  solving: "◑",
-  done:    "✓",
+const DIFF: Record<string, { color: string; bg: string }> = {
+  Easy:   { color: "#16a34a", bg: "#f0fdf4" },
+  Medium: { color: "#d97706", bg: "#fffbeb" },
+  Hard:   { color: "#dc2626", bg: "#fef2f2" },
 };
 
 export default function QuestionCard({ question, onStatusChange }: Props) {
   const { id, title, topic, difficulty, link, status } = question;
+  const diff = DIFF[difficulty] ?? DIFF.Medium;
+  const done = status === "done";
+  const solving = status === "solving";
 
   return (
     <div
-      className={cn(
-        "flex items-center gap-4 px-4 py-3 rounded-xl border transition-all group",
-        "bg-[#1e1b4b]/20 hover:bg-[#1e1b4b]/40",
-        status === "done"
-          ? "border-emerald-500/20"
-          : "border-[#312e81]/50 hover:border-violet-500/30"
-      )}
+      style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "10px 14px",
+        border: `1px solid ${done ? "#bbf7d0" : "#f0f0f0"}`,
+        borderRadius: 10,
+        background: done ? "#f0fdf4" : "#fff",
+        transition: "border-color 0.15s, background 0.15s",
+        cursor: "default",
+      }}
+      onMouseEnter={(e) => {
+        if (!done) (e.currentTarget as HTMLElement).style.borderColor = "#e0e0e0";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.borderColor = done ? "#bbf7d0" : "#f0f0f0";
+      }}
     >
-      {/* Status toggle */}
+      {/* Checkbox */}
       <button
-        onClick={() => onStatusChange(id, STATUS_CYCLE[status])}
-        className={cn(
-          "w-6 h-6 rounded-md border-2 flex items-center justify-center text-xs font-bold shrink-0 transition-all",
-          STATUS_STYLES[status],
-          status === "done" ? "text-emerald-400" : "text-amber-400"
-        )}
-        title={`Mark as ${STATUS_CYCLE[status]}`}
+        onClick={() => onStatusChange(id, CYCLE[status])}
+        style={{
+          width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+          border: `1.5px solid ${done ? "#16a34a" : solving ? "#d97706" : "#d1d5db"}`,
+          background: done ? "#16a34a" : solving ? "#fffbeb" : "#fff",
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "all 0.15s",
+        }}
       >
-        {STATUS_ICON[status]}
+        {done && (
+          <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+            <path d="M1 3.5L3 5.5L8 1" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+        {solving && <div style={{ width: 7, height: 7, borderRadius: 2, background: "#d97706" }} />}
       </button>
 
-      {/* Day number */}
-      <span className="text-xs text-slate-600 w-10 shrink-0 font-mono">
+      {/* Number */}
+      <span style={{ fontSize: 11, color: "#c4c4c4", width: 32, flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
         #{id}
       </span>
 
       {/* Title */}
-      <span
-        className={cn(
-          "flex-1 text-sm font-medium truncate",
-          status === "done" ? "text-slate-500 line-through" : "text-slate-200"
-        )}
-      >
+      <span style={{
+        flex: 1, fontSize: 13, fontWeight: 450,
+        color: done ? "#9ca3af" : "#111827",
+        textDecoration: done ? "line-through" : "none",
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+      }}>
         {title}
       </span>
 
-      {/* Topic chip */}
-      <span className="hidden md:block text-xs text-slate-500 bg-slate-800/50 px-2 py-0.5 rounded-full shrink-0 max-w-[120px] truncate">
+      {/* Topic */}
+      <span style={{
+        fontSize: 11, color: "#9ca3af",
+        background: "#f9f9f9",
+        padding: "2px 8px", borderRadius: 99,
+        border: "1px solid #f0f0f0",
+        maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        flexShrink: 0,
+      }}>
         {topic}
       </span>
 
       {/* Difficulty */}
-      <span
-        className={cn(
-          "text-xs px-2 py-0.5 rounded-full border shrink-0",
-          DIFF_STYLES[difficulty]
-        )}
-      >
+      <span style={{
+        fontSize: 11, fontWeight: 500,
+        color: diff.color, background: diff.bg,
+        padding: "2px 8px", borderRadius: 99,
+        flexShrink: 0,
+      }}>
         {difficulty}
       </span>
 
       {/* Link */}
       {link && (
         <a
-          href={link}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e: React.MouseEvent<HTMLAnchorElement>) => e.stopPropagation()}
-          className="text-slate-600 hover:text-violet-400 transition-colors shrink-0 text-sm"
-          title="Open on LeetCode"
-        >
-          ↗
-        </a>
+          href={link} target="_blank" rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          style={{ fontSize: 12, color: "#c4c4c4", textDecoration: "none", flexShrink: 0 }}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "#2563eb")}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "#c4c4c4")}
+        >↗</a>
       )}
     </div>
   );

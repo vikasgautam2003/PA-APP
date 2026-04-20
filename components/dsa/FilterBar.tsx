@@ -1,97 +1,76 @@
 "use client";
 
 import { useDSAStore } from "@/store/dsaStore";
-import { cn } from "@/lib/utils";
 
-const DIFFICULTIES = ["All", "Easy", "Medium", "Hard"] as const;
-const STATUSES = ["All", "todo", "solving", "done"] as const;
-
-const STATUS_LABELS: Record<string, string> = {
-  All: "All",
-  todo: "Todo",
-  solving: "Solving",
-  done: "Done",
-};
-
-const DIFF_COLORS: Record<string, string> = {
-  All: "text-slate-300",
-  Easy: "text-emerald-400",
-  Medium: "text-amber-400",
-  Hard: "text-red-400",
-};
+const DIFFS   = ["All","Easy","Medium","Hard"] as const;
+const STATS   = ["All","todo","solving","done"] as const;
+const SLABELS: Record<string,string> = { All:"All", todo:"Todo", solving:"Solving", done:"Done" };
+const DCOLORS: Record<string,string> = { Easy:"#16a34a", Medium:"#d97706", Hard:"#dc2626", All:"#2563eb" };
 
 export default function FilterBar() {
-  const {
-    topics,
-    selectedTopic,
-    filterDifficulty,
-    filterStatus,
-    searchQuery,
-    setSelectedTopic,
-    setFilterDifficulty,
-    setFilterStatus,
-    setSearchQuery,
-  } = useDSAStore();
+  const { topics, selectedTopic, filterDifficulty, filterStatus, searchQuery,
+    setSelectedTopic, setFilterDifficulty, setFilterStatus, setSearchQuery } = useDSAStore();
+
+  const pillBase = { padding: "4px 12px", borderRadius: 99, fontSize: 12, fontWeight: 500, cursor: "pointer", border: "none", transition: "all 0.1s" } as React.CSSProperties;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {/* Search */}
       <input
-        type="text"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="Search questions..."
-        className="w-full bg-[#1e1b4b]/40 border border-[#312e81] rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-violet-500 transition-colors"
+        style={{
+          width: "100%", padding: "9px 14px", borderRadius: 9,
+          border: "1px solid #e5e5e5", fontSize: 13, color: "#111827",
+          background: "#fafafa", outline: "none",
+          transition: "border-color 0.15s",
+        }}
+        onFocus={(e) => (e.target.style.borderColor = "#2563eb")}
+        onBlur={(e) => (e.target.style.borderColor = "#e5e5e5")}
       />
 
-      <div className="flex flex-wrap gap-3">
-        {/* Topic */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        {/* Topic select */}
         <select
           value={selectedTopic}
           onChange={(e) => setSelectedTopic(e.target.value)}
-          className="bg-[#1e1b4b]/40 border border-[#312e81] rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-violet-500 transition-colors"
+          style={{
+            padding: "5px 10px", borderRadius: 8, border: "1px solid #e5e5e5",
+            fontSize: 12, color: "#374151", background: "#fff", cursor: "pointer", outline: "none",
+          }}
         >
-          {topics.map((t) => (
-            <option key={t} value={t} className="bg-[#1e1b4b]">
-              {t}
-            </option>
-          ))}
+          {topics.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
 
         {/* Difficulty */}
-        <div className="flex gap-1 bg-[#1e1b4b]/40 border border-[#312e81] rounded-lg p-1">
-          {DIFFICULTIES.map((d) => (
-            <button
-              key={d}
-              onClick={() => setFilterDifficulty(d)}
-              className={cn(
-                "px-3 py-1 rounded-md text-xs font-medium transition-all",
-                filterDifficulty === d
-                  ? "bg-[#312e81] text-white"
-                  : cn("hover:bg-white/5", DIFF_COLORS[d])
-              )}
-            >
-              {d}
-            </button>
-          ))}
+        <div style={{ display: "flex", gap: 3, background: "#f5f5f5", padding: 3, borderRadius: 9 }}>
+          {DIFFS.map((d) => {
+            const active = filterDifficulty === d;
+            return (
+              <button key={d} onClick={() => setFilterDifficulty(d)} style={{
+                ...pillBase,
+                background: active ? "#fff" : "transparent",
+                color: active ? DCOLORS[d] : "#9ca3af",
+                boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              }}>{d}</button>
+            );
+          })}
         </div>
 
         {/* Status */}
-        <div className="flex gap-1 bg-[#1e1b4b]/40 border border-[#312e81] rounded-lg p-1">
-          {STATUSES.map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilterStatus(s)}
-              className={cn(
-                "px-3 py-1 rounded-md text-xs font-medium transition-all",
-                filterStatus === s
-                  ? "bg-[#312e81] text-white"
-                  : "text-slate-400 hover:bg-white/5"
-              )}
-            >
-              {STATUS_LABELS[s]}
-            </button>
-          ))}
+        <div style={{ display: "flex", gap: 3, background: "#f5f5f5", padding: 3, borderRadius: 9 }}>
+          {STATS.map((s) => {
+            const active = filterStatus === s;
+            return (
+              <button key={s} onClick={() => setFilterStatus(s)} style={{
+                ...pillBase,
+                background: active ? "#fff" : "transparent",
+                color: active ? "#2563eb" : "#9ca3af",
+                boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              }}>{SLABELS[s]}</button>
+            );
+          })}
         </div>
       </div>
     </div>
