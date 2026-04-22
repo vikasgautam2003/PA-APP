@@ -262,13 +262,22 @@ Use actual subtopic IDs from the queue. Assign subtopics in order — do not ski
     const db = await getDb();
     const doneAt = new Date().toISOString();
 
+    // Find current state
+    const currentPlan = store.currentPlan;
+    if (!currentPlan) return false;
+
+    const currentDay = currentPlan.days.find((d) => d.date === dayDate);
+    const item = currentDay?.items.find((i) => i.id === itemId && i.type === itemType);
+    if (!item) return false;
+
+    const nowDone = !item.is_done;
+
     if (itemType === "subtopic") {
       await db.execute(
-        "UPDATE planner_subtopics SET is_done = 1, done_at = ? WHERE id = ? AND user_id = ?",
-        [doneAt, itemId, user!.id]
+        "UPDATE planner_subtopics SET is_done = ?, done_at = ? WHERE id = ? AND user_id = ?",
+        [nowDone ? 1 : 0, nowDone ? doneAt : null, itemId, user!.id]
       );
     } else {
-      // First check if the question exists
       const exists = await db.select<{ id: number }[]>(
         "SELECT id FROM dsa_questions WHERE id = ?",
         [itemId]
@@ -276,24 +285,23 @@ Use actual subtopic IDs from the queue. Assign subtopics in order — do not ski
       if (exists.length > 0) {
         await db.execute(
           `INSERT INTO dsa_progress (user_id, question_id, status, solved_at, updated_at)
-           VALUES (?, ?, 'done', ?, CURRENT_TIMESTAMP)
+           VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
            ON CONFLICT(user_id, question_id) DO UPDATE SET
-             status='done', solved_at=excluded.solved_at, updated_at=CURRENT_TIMESTAMP`,
-          [user!.id, itemId, doneAt]
+             status=excluded.status, solved_at=excluded.solved_at, updated_at=CURRENT_TIMESTAMP`,
+          [user!.id, itemId, nowDone ? "done" : "todo", nowDone ? doneAt : null]
         );
       }
     }
 
     // Update plan in memory + SQLite
-    if (!store.currentPlan) return false;
     const updatedPlan: WeekPlan = {
-      ...store.currentPlan,
-      days: store.currentPlan.days.map((d) => {
+      ...currentPlan,
+      days: currentPlan.days.map((d) => {
         if (d.date !== dayDate) return d;
-        const updatedItems = d.items.map((item) =>
-          item.id === itemId && item.type === itemType
-            ? { ...item, is_done: true, done_at: doneAt }
-            : item
+        const updatedItems = d.items.map((i) =>
+          i.id === itemId && i.type === itemType
+            ? { ...i, is_done: nowDone, done_at: nowDone ? doneAt : null }
+            : i
         );
         return { ...d, items: updatedItems, status: computeDayStatus(updatedItems) };
       }),

@@ -12,10 +12,12 @@ export default function TaskCheckbox({ done, onCheck }: Props) {
   const [showBurst, setShowBurst] = useState(false);
 
   const handleClick = useCallback(async () => {
-    if (done || animating) return;
+    if (animating) return;
     setAnimating(true);
-    setShowBurst(true);
-    setTimeout(() => setShowBurst(false), 700);
+    if (!done) {
+      setShowBurst(true);
+      setTimeout(() => setShowBurst(false), 700);
+    }
     try {
       await onCheck();
     } finally {
@@ -36,8 +38,21 @@ export default function TaskCheckbox({ done, onCheck }: Props) {
         background: done ? "#16a34a" : animating ? "#eff6ff" : "transparent",
         display: "flex", alignItems: "center", justifyContent: "center",
         transition: "all 0.2s cubic-bezier(0.34,1.56,0.64,1)",
-        transform: animating ? "scale(1.25)" : "scale(1)",
-        boxShadow: done ? "0 0 8px #16a34a60" : animating ? "0 0 0 4px #2563eb20" : "none",
+        transform: animating ? "scale(1.15)" : "scale(1)",
+        boxShadow: done ? "0 0 8px #16a34a60" : "none",
+        cursor: "pointer",
+      }}
+      onMouseEnter={(e) => {
+        if (done) {
+          (e.currentTarget as HTMLElement).style.background = "#dc2626";
+          (e.currentTarget as HTMLElement).style.borderColor = "#dc2626";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (done) {
+          (e.currentTarget as HTMLElement).style.background = "#16a34a";
+          (e.currentTarget as HTMLElement).style.borderColor = "#16a34a";
+        }
       }}>
         {done && (
           <svg width="11" height="9" viewBox="0 0 11 9" fill="none"
