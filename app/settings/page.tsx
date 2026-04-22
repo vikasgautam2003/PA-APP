@@ -4,7 +4,7 @@ import PageWrapper from "@/components/layout/PageWrapper";
 import { useSettingsStore } from "@/store/settingsStore";
 
 export default function SettingsPage() {
-  const { theme, setTheme, geminiKey, setGeminiKey } = useSettingsStore();
+  const { theme, setTheme, groqKey, setGroqKey } = useSettingsStore();
 
   return (
     <PageWrapper title="Settings" subtitle="Configure your DevKit workspace">
@@ -64,17 +64,24 @@ export default function SettingsPage() {
           </h2>
           <div style={{ border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden" }}>
             <div style={{ padding: "20px 24px" }}>
-              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)", marginBottom: 4 }}>
-                Gemini API Key
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
+                  Groq API Key
+                </p>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "var(--easy)", background: "var(--easy-bg)", padding: "2px 8px", borderRadius: 99 }}>
+                  FREE
+                </span>
+              </div>
               <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 14 }}>
-                Required for the weekly planner agent and finance chatbot. Get yours at aistudio.google.com
+                Powers the weekly planner and finance chatbot. Get your free key at{" "}
+                <span style={{ color: "var(--accent-text)" }}>console.groq.com/keys</span>
+                {" "}· Model: llama-3.3-70b-versatile
               </p>
               <input
                 type="password"
-                value={geminiKey}
-                onChange={(e) => setGeminiKey(e.target.value)}
-                placeholder="AIza••••••••••••••••••••••••••••••••••••••"
+                value={groqKey}
+                onChange={(e) => setGroqKey(e.target.value)}
+                placeholder="gsk_••••••••••••••••••••••••••••••••••••••••••••••••••••"
                 style={{
                   width: "100%", padding: "11px 16px", borderRadius: 10,
                   border: "1px solid var(--border)", fontSize: 13,
@@ -87,7 +94,10 @@ export default function SettingsPage() {
             </div>
             <div style={{ padding: "14px 24px", borderTop: "1px solid var(--border)", background: "var(--bg-hover)" }}>
               <button
-                onClick={() => alert("Key saved!")}
+                onClick={() => {
+                  useSettingsStore.getState().setGroqKey(groqKey);
+                  alert("Groq key saved!");
+                }}
                 style={{
                   padding: "9px 22px", borderRadius: 9, border: "none",
                   background: "var(--accent)", color: "#fff",

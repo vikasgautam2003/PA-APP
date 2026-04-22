@@ -13,12 +13,12 @@ interface Props {
   onMarkDone: (dayDate: string, itemId: number, type: "subtopic" | "dsa") => Promise<boolean>;
 }
 
-const STATUS_STYLES: Record<string, { border: string; bg: string; dot: string; label: string }> = {
-  green:   { border: "#16a34a40", bg: "#16a34a08", dot: "var(--easy)",   label: "Complete" },
-  amber:   { border: "#d9770640", bg: "#d9770608", dot: "var(--medium)", label: "Partial"  },
-  red:     { border: "#dc262640", bg: "#dc262608", dot: "var(--hard)",   label: "Missed"   },
-  pending: { border: "var(--border)", bg: "var(--bg-elevated)", dot: "var(--border-subtle)", label: "Upcoming" },
-  rest:    { border: "var(--border)", bg: "var(--bg-hover)",    dot: "var(--text-faint)",    label: "Rest"     },
+const STATUS_STYLES: Record<string, { border: string; bg: string; headerBg: string; dot: string; label: string; labelColor: string }> = {
+  green:   { border: "#16a34a",   bg: "#f0fdf4",   headerBg: "#dcfce7", dot: "#16a34a",   label: "Complete", labelColor: "#16a34a"   },
+  amber:   { border: "#d97706",   bg: "#fffbeb",   headerBg: "#fef3c7", dot: "#d97706",   label: "Partial",  labelColor: "#d97706"   },
+  red:     { border: "#dc2626",   bg: "#fef2f2",   headerBg: "#fee2e2", dot: "#dc2626",   label: "Missed",   labelColor: "#dc2626"   },
+  pending: { border: "#e5e7eb",   bg: "#ffffff",   headerBg: "#f9fafb", dot: "#9ca3af",   label: "Upcoming", labelColor: "#9ca3af"   },
+  rest:    { border: "#e5e7eb",   bg: "#fafafa",   headerBg: "#f3f4f6", dot: "#d1d5db",   label: "Rest",     labelColor: "#9ca3af"   },
 };
 
 const DIFF_COLOR: Record<string, string> = {
@@ -171,34 +171,58 @@ export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, 
 
               return (
                 <div key={day.date} style={{
-                  border: `1px solid ${isToday ? "var(--accent)" : style.border}`,
-                  borderRadius: 16, background: style.bg, overflow: "hidden",
-                  boxShadow: isToday ? "0 0 0 2px var(--accent-glow)" : "none",
-                  transition: "all 0.2s",
+                  border: `2px solid ${isToday ? "#2563eb" : style.border}`,
+                  borderRadius: 16,
+                  background: style.bg,
+                  overflow: "hidden",
+                  boxShadow: isToday
+                    ? "0 0 0 3px #2563eb25"
+                    : day.status === "green" ? "0 0 0 2px #16a34a20"
+                    : day.status === "amber" ? "0 0 0 2px #d9770620"
+                    : day.status === "red"   ? "0 0 0 2px #dc262620"
+                    : "none",
+                  transition: "all 0.25s ease",
                 }}>
                   {/* Day header */}
                   <div style={{
-                    padding: "14px 16px 12px",
+                    padding: "12px 16px 10px",
                     borderBottom: `1px solid ${style.border}`,
+                    background: style.headerBg,
                     display: "flex", alignItems: "center", justifyContent: "space-between",
                   }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: style.dot, boxShadow: day.status === "green" ? "0 0 8px var(--easy)" : "none" }} />
-                      <span style={{ fontSize: 14, fontWeight: 700, color: isToday ? "var(--accent-text)" : "var(--text-primary)" }}>
+                      <div style={{
+                        width: 9, height: 9, borderRadius: "50%",
+                        background: style.dot,
+                        boxShadow: day.status === "green" ? "0 0 6px #16a34a" : day.status === "amber" ? "0 0 6px #d97706" : "none",
+                      }} />
+                      <span style={{
+                        fontSize: 14, fontWeight: 700,
+                        color: isToday ? "#2563eb" : day.status !== "pending" ? style.dot : "var(--text-primary)",
+                      }}>
                         {day.day}
                       </span>
                       {isToday && (
-                        <span style={{ fontSize: 9, fontWeight: 700, color: "var(--accent)", background: "var(--accent-glow)", padding: "1px 6px", borderRadius: 99, letterSpacing: "0.06em" }}>
-                          TODAY
-                        </span>
+                        <span style={{
+                          fontSize: 9, fontWeight: 800, color: "#fff",
+                          background: "#2563eb", padding: "2px 7px",
+                          borderRadius: 99, letterSpacing: "0.06em",
+                          boxShadow: "0 0 8px #2563eb60",
+                        }}>TODAY</span>
                       )}
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 11, color: "#6b7280" }}>
                         {doneCount}/{day.items.length}
                       </span>
-                      {day.status !== "pending" && (
-                        <span style={{ fontSize: 10, fontWeight: 600, color: style.dot, background: `${style.dot}20`, padding: "1px 7px", borderRadius: 99 }}>
+                      {day.status !== "pending" && day.status !== "rest" && (
+                        <span style={{
+                          fontSize: 10, fontWeight: 700,
+                          color: style.labelColor,
+                          background: `${style.dot}20`,
+                          padding: "2px 8px", borderRadius: 99,
+                          border: `1px solid ${style.dot}40`,
+                        }}>
                           {style.label}
                         </span>
                       )}
@@ -219,10 +243,12 @@ export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, 
                       day.items.map((item) => (
                         <div key={`${item.type}-${item.id}`} style={{
                           display: "flex", alignItems: "flex-start", gap: 10,
-                          padding: "8px 10px", borderRadius: 10,
-                          background: item.is_done ? "transparent" : "var(--bg-hover)",
-                          border: `1px solid ${item.is_done ? "transparent" : "var(--border)"}`,
+                          padding: "10px 12px", borderRadius: 10,
+                          background: item.is_done ? "transparent" : "#ffffff",
+                          border: `1px solid ${item.is_done ? "transparent" : "#e5e7eb"}`,
+                          boxShadow: item.is_done ? "none" : "0 1px 3px rgba(0,0,0,0.06)",
                           transition: "all 0.2s",
+                          opacity: item.is_done ? 0.6 : 1,
                         }}>
                           <TaskCheckbox
                             done={item.is_done}

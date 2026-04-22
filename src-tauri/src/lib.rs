@@ -89,6 +89,17 @@ pub fn run() {
                     .await
                     .expect("Failed to connect to SQLite");
 
+                // Enable WAL mode and disable FK constraints for compatibility
+                sqlx::query("PRAGMA foreign_keys = OFF")
+                    .execute(&pool)
+                    .await
+                    .expect("Failed to set pragma");
+
+                sqlx::query("PRAGMA journal_mode = WAL")
+                    .execute(&pool)
+                    .await
+                    .expect("Failed to set WAL mode");
+
                 // Run schema manually since migrations may not have fired yet
                 sqlx::query(
                     "CREATE TABLE IF NOT EXISTS users (

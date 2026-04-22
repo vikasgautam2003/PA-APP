@@ -4,14 +4,14 @@ type Theme = "dark" | "light";
 
 interface SettingsStore {
   theme: Theme;
-  geminiKey: string;
-  setTheme: (theme: Theme) => void;
-  setGeminiKey: (key: string) => void;
+  groqKey: string;
+  setTheme: (t: Theme) => void;
+  setGroqKey: (key: string) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>((set) => ({
   theme: "dark",
-  geminiKey: "",
+  groqKey: "",
   setTheme: (theme) => {
     set({ theme });
     if (typeof document !== "undefined") {
@@ -19,7 +19,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       localStorage.setItem("devkit-theme", theme);
     }
   },
-  setGeminiKey: (key) => set({ geminiKey: key }),
+  setGroqKey: (key) => set({ groqKey: key }),
 }));
 
 export function initTheme() {

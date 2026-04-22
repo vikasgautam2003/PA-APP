@@ -2,6 +2,7 @@ import { useSettingsStore } from "@/store/settingsStore";
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
+
 export async function askGemini(prompt: string): Promise<string> {
   const key = useSettingsStore.getState().geminiKey;
   if (!key) throw new Error("Gemini API key not set. Add it in Settings.");

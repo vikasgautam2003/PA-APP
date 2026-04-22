@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useFinanceStore } from "@/store/financeStore";
 import { useAuthStore } from "@/store/authStore";
 import { getDb } from "@/lib/db";
-import { askGemini } from "@/lib/gemini";
+import { askGroqChat } from "@/lib/groq";
 import { calculateSavings } from "@/lib/utils";
 import type {
   FinanceData, Transaction, TransactionFormData,
@@ -263,7 +263,10 @@ Give specific, actionable advice based on actual numbers. Be concise and direct.
 
 User: ${text}`;
 
-      const reply = await askGemini(context);
+      const reply = await askGroqChat(
+        store.messages.map((m) => ({ role: m.role, content: m.content })),
+        context.split(`User: ${text}`)[0]
+      );
       store.addMessage({ role: "assistant", content: reply });
     } catch (e) {
       store.addMessage({

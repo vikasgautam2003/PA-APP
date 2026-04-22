@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { usePlannerStore } from "@/store/plannerStore";
 import { useAuthStore } from "@/store/authStore";
 import { getDb } from "@/lib/db";
-import { askGemini } from "@/lib/gemini";
+import { askGroq } from "@/lib/groq";
 import type {
   PlannerTopicWithSubtopics, PlannerSubtopic,
   WeekPlan, DayPlan, DayPlanItem, DifficultyRamp,
@@ -209,7 +209,7 @@ Return ONLY valid JSON in this exact format:
 
 Use actual subtopic IDs from the queue. Assign subtopics in order — do not skip ahead.`;
 
-      const raw = await askGemini(prompt);
+      const raw = await askGroq(prompt);
       const clean = raw.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
 
@@ -268,13 +268,20 @@ Use actual subtopic IDs from the queue. Assign subtopics in order — do not ski
         [doneAt, itemId, user!.id]
       );
     } else {
-      await db.execute(
-        `INSERT INTO dsa_progress (user_id, question_id, status, solved_at, updated_at)
-         VALUES (?, ?, 'done', ?, CURRENT_TIMESTAMP)
-         ON CONFLICT(user_id, question_id) DO UPDATE SET
-           status='done', solved_at=excluded.solved_at, updated_at=CURRENT_TIMESTAMP`,
-        [user!.id, itemId, doneAt]
+      // First check if the question exists
+      const exists = await db.select<{ id: number }[]>(
+        "SELECT id FROM dsa_questions WHERE id = ?",
+        [itemId]
       );
+      if (exists.length > 0) {
+        await db.execute(
+          `INSERT INTO dsa_progress (user_id, question_id, status, solved_at, updated_at)
+           VALUES (?, ?, 'done', ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(user_id, question_id) DO UPDATE SET
+             status='done', solved_at=excluded.solved_at, updated_at=CURRENT_TIMESTAMP`,
+          [user!.id, itemId, doneAt]
+        );
+      }
     }
 
     // Update plan in memory + SQLite
