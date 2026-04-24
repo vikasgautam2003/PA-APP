@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
@@ -39,25 +40,26 @@ export default function Sidebar({ open, onToggle }: Props) {
       }}>
         {open && (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: 9,
-              background: "linear-gradient(135deg, var(--accent), #1d4ed8)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 14, fontWeight: 800, color: "#fff",
-              boxShadow: "0 4px 12px var(--accent-glow)",
-            }}>D</div>
+            <Image
+              src="/icon.png"
+              alt="Ares"
+              width={30}
+              height={30}
+              style={{ borderRadius: 9, objectFit: "cover" }}
+            />
             <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
-              DevKit
+              Ares
             </span>
           </div>
         )}
         {!open && (
-          <div style={{
-            width: 30, height: 30, borderRadius: 9,
-            background: "linear-gradient(135deg, var(--accent), #1d4ed8)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 14, fontWeight: 800, color: "#fff",
-          }}>D</div>
+          <Image
+            src="/icon.png"
+            alt="Ares"
+            width={30}
+            height={30}
+            style={{ borderRadius: 9, objectFit: "cover" }}
+          />
         )}
         <button onClick={onToggle} style={{
           background: "none", border: "1px solid var(--border-subtle)",

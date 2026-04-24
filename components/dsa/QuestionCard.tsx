@@ -115,12 +115,26 @@ export default function QuestionCard({ question, onStatusChange, onAddNote, onGe
 
         {/* Link */}
         {link && (
-          <a href={link} target="_blank" rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            style={{ fontSize: 13, color: "var(--text-faint)", textDecoration: "none", flexShrink: 0 }}
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                const { open } = await import("@tauri-apps/plugin-shell");
+                await open(link);
+              } catch {
+                window.open(link, "_blank");
+              }
+            }}
+            style={{
+              fontSize: 13, color: "var(--text-faint)",
+              background: "none", border: "none",
+              cursor: "pointer", flexShrink: 0,
+              transition: "color 0.15s", padding: 0,
+            }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--accent-text)")}
             onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "var(--text-faint)")}
-          >↗</a>
+            title="Open on LeetCode"
+          >↗</button>
         )}
       </div>
 

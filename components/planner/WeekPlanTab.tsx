@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { WeekPlan, DayPlan, DayPlanItem } from "@/types";
+import type { WeekPlan } from "@/types";
 import TaskCheckbox from "./TaskCheckbox";
 
 interface Props {
@@ -165,7 +165,6 @@ export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
             {plan.days.map((day) => {
               const isToday  = day.date === today;
-              const isPast   = day.date < today;
               const style    = STATUS_STYLES[day.status] ?? STATUS_STYLES.pending;
               const doneCount = day.items.filter((i) => i.is_done).length;
 
@@ -252,7 +251,7 @@ export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, 
                         }}>
                           <TaskCheckbox
                             done={item.is_done}
-                            onCheck={() => onMarkDone(day.date, item.id, item.type)}
+                            onCheck={() => onMarkDone(day.date, item.id, item.type).then(() => {})}
                           />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{

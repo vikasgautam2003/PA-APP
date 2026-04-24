@@ -18,7 +18,7 @@ export default function PageWrapper({ title, subtitle, action, children, noPaddi
       }}>
         <div>
           <p style={{ fontSize: 11, fontWeight: 600, color: "var(--accent)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
-            DevKit
+            Ares
           </p>
           <h1 style={{ fontSize: 30, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
             {title}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
-import { initTheme } from "@/store/settingsStore";
+import { initTheme, loadPersistedSettings } from "@/store/settingsStore";
 import Sidebar from "@/components/layout/Sidebar";
 import "./globals.css";
 
@@ -15,7 +15,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   useEffect(() => { initialize(); }, [initialize]);
 
-  useEffect(() => { initTheme(); }, []);
+  useEffect(() => {
+    initTheme();
+    loadPersistedSettings();
+    document.title = "Ares";
+  }, []);
 
   useEffect(() => {
     if (!isLoading) {
@@ -31,7 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         justifyContent: "center", height: "100vh", gap: 12,
       }}>
         <div style={{ width: 24, height: 24, borderRadius: 7, background: "#2563eb", animation: "pulse 1.5s infinite" }} />
-        <span style={{ color: "#4b5563", fontSize: 14 }}>Loading DevKit…</span>
+        <span style={{ color: "#4b5563", fontSize: 14 }}>Loading Ares…</span>
       </body></html>
     );
   }

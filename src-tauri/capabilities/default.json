@@ -16,6 +16,7 @@
     "sql:allow-execute",
     "sql:allow-select",
     "http:default",
-    "http:allow-fetch"
+    "http:allow-fetch",
+    "shell:allow-open"
   ]
 }

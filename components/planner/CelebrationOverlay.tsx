@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef } from "react";
 
 interface Props {
@@ -102,14 +103,18 @@ export default function CelebrationOverlay({ onDone }: Props) {
         display: "flex", flexDirection: "column", alignItems: "center", gap: 16,
         animation: "popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards",
       }}>
-        <div style={{
-          width: 80, height: 80, borderRadius: 22,
-          background: "linear-gradient(135deg, var(--accent), #7c3aed)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 36, fontWeight: 800, color: "#fff",
-          boxShadow: "0 0 60px #2563eb80, 0 0 120px #7c3aed40",
-          animation: "pulse 0.8s ease infinite alternate",
-        }}>D</div>
+        <Image
+          src="/icon.png"
+          alt="Ares"
+          width={80}
+          height={80}
+          style={{
+            borderRadius: 22,
+            objectFit: "cover",
+            boxShadow: "0 0 60px #2563eb80, 0 0 120px #7c3aed40",
+            animation: "pulse 0.8s ease infinite alternate",
+          }}
+        />
 
         <div style={{ textAlign: "center" }}>
           <p style={{

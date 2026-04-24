@@ -1,13 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import PageWrapper from "@/components/layout/PageWrapper";
 import { useSettingsStore } from "@/store/settingsStore";
 
 export default function SettingsPage() {
   const { theme, setTheme, groqKey, setGroqKey } = useSettingsStore();
+  const [saved, setSaved] = useState(false);
 
   return (
-    <PageWrapper title="Settings" subtitle="Configure your DevKit workspace">
+    <PageWrapper title="Settings" subtitle="Configure your Ares workspace">
       <div style={{ display: "flex", flexDirection: "column", gap: 32, maxWidth: 560 }}>
 
         {/* Appearance */}
@@ -95,17 +97,20 @@ export default function SettingsPage() {
             <div style={{ padding: "14px 24px", borderTop: "1px solid var(--border)", background: "var(--bg-hover)" }}>
               <button
                 onClick={() => {
-                  useSettingsStore.getState().setGroqKey(groqKey);
-                  alert("Groq key saved!");
+                  setGroqKey(groqKey);
+                  setSaved(true);
+                  setTimeout(() => setSaved(false), 2000);
                 }}
                 style={{
                   padding: "9px 22px", borderRadius: 9, border: "none",
-                  background: "var(--accent)", color: "#fff",
+                  background: saved ? "var(--easy-bg)" : "var(--accent)",
+                  color: saved ? "var(--easy)" : "#fff",
                   fontSize: 13, fontWeight: 600, cursor: "pointer",
-                  boxShadow: "0 0 16px var(--accent-glow)",
+                  transition: "all 0.2s",
+                  boxShadow: saved ? "none" : "0 0 16px var(--accent-glow)",
                 }}
               >
-                Save Key
+                {saved ? "✓ Saved" : "Save Key"}
               </button>
             </div>
           </div>

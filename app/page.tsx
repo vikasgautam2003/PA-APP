@@ -165,7 +165,7 @@ export default function DashboardPage() {
         `${i.is_done ? "✓" : "○"} ${i.label}${i.difficulty ? ` (${i.difficulty})` : ""}`
       ).join(", ") || "No tasks planned today";
 
-      const systemPrompt = `You are a personal assistant inside a developer's productivity app called DevKit.
+      const systemPrompt = `You are a personal assistant inside a developer's productivity app called Ares.
 Write a daily brief with exactly this structure — no extra text before or after:
 
 **Good [time of day], [name].** (one punchy opening sentence about their day)

@@ -16,15 +16,6 @@ function getWeekStart(): string {
   return d.toISOString().split("T")[0];
 }
 
-function getWeekDays(weekStart: string): { date: string; day: string }[] {
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  return days.map((day, i) => {
-    const d = new Date(weekStart + "T00:00:00");
-    d.setDate(d.getDate() + i);
-    return { date: d.toISOString().split("T")[0], day };
-  });
-}
-
 function getDifficultyRamp(solved: number): DifficultyRamp {
   if (solved < 100) return { easy: 0.70, medium: 0.20, hard: 0.10 };
   if (solved < 300) return { easy: 0.50, medium: 0.35, hard: 0.15 };
@@ -128,7 +119,6 @@ export function usePlanner() {
     try {
       const db = await getDb();
       const weekStart = getWeekStart();
-      const days = getWeekDays(weekStart);
 
       // Get DSA context
       const solvedRows = await db.select<{ count: number }[]>(
@@ -368,7 +358,7 @@ Return ONLY valid JSON in this exact format:
   ]
 }`;
 
-      const raw   = await askGemini(prompt);
+      const raw   = await askGroq(prompt);
       const clean = raw.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
 

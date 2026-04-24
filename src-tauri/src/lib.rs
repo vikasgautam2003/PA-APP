@@ -72,6 +72,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             let app_dir = app.path().app_data_dir()
                 .expect("Could not get app data dir");
