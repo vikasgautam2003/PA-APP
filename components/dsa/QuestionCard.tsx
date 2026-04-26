@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { DSAQuestionWithProgress, QuestionNote } from "@/types";
 import NoteModal from "@/components/planner/NoteModal";
+import QuestionDetailModal from "@/components/dsa/QuestionDetailModal";
 
 interface Props {
   question: DSAQuestionWithProgress;
@@ -15,15 +16,37 @@ const CYCLE: Record<string, "todo" | "solving" | "done"> = {
   todo: "solving", solving: "done", done: "todo",
 };
 
+const COMPANY_COLORS = [
+  { bg: "#1e3a5f", text: "#60a5fa" },
+  { bg: "#1e3a2f", text: "#4ade80" },
+  { bg: "#3a1e1e", text: "#f87171" },
+  { bg: "#2d1e3a", text: "#c084fc" },
+  { bg: "#1e2d3a", text: "#38bdf8" },
+  { bg: "#3a2d1e", text: "#fb923c" },
+];
+
+function companyColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return COMPANY_COLORS[Math.abs(hash) % COMPANY_COLORS.length];
+}
+
 export default function QuestionCard({ question, onStatusChange, onAddNote, onGetNotes }: Props) {
-  const { id, title, topic, difficulty, link, status } = question;
+  const { id, title, topic, difficulty, link, status, companies } = question;
   const done    = status === "done";
   const solving = status === "solving";
 
   const [noteOpen, setNoteOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
 
-  const diffColor = difficulty === "Easy" ? "var(--easy)"   : difficulty === "Medium" ? "var(--medium)" : "var(--hard)";
-  const diffBg    = difficulty === "Easy" ? "var(--easy-bg)": difficulty === "Medium" ? "var(--medium-bg)" : "var(--hard-bg)";
+  const diffColor = difficulty === "Easy" ? "var(--easy)"    : difficulty === "Medium" ? "var(--medium)" : "var(--hard)";
+  const diffBg    = difficulty === "Easy" ? "var(--easy-bg)" : difficulty === "Medium" ? "var(--medium-bg)" : "var(--hard-bg)";
+
+  const companiesList = companies
+    ? companies.split(",").map((c) => c.trim()).filter(Boolean)
+    : [];
+  const visibleCompanies = companiesList.slice(0, 2);
+  const extraCount = companiesList.length - 2;
 
   return (
     <>
@@ -67,16 +90,48 @@ export default function QuestionCard({ question, onStatusChange, onAddNote, onGe
           #{id}
         </span>
 
-        {/* Title */}
-        <span style={{
-          flex: 1, fontSize: 14, fontWeight: done ? 400 : 500,
-          color: done ? "var(--text-muted)" : "var(--text-primary)",
-          textDecoration: done ? "line-through" : "none",
-          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          letterSpacing: "-0.01em",
-        }}>
+        {/* Title — clickable to open detail modal */}
+        <span
+          onClick={() => setDetailOpen(true)}
+          style={{
+            flex: 1, fontSize: 14, fontWeight: done ? 400 : 500,
+            color: done ? "var(--text-muted)" : "var(--text-primary)",
+            textDecoration: done ? "line-through" : "none",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            letterSpacing: "-0.01em", cursor: "pointer",
+          }}
+          onMouseEnter={(e) => { if (!done) (e.currentTarget as HTMLElement).style.color = "var(--accent-text)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = done ? "var(--text-muted)" : "var(--text-primary)"; }}
+        >
           {title}
         </span>
+
+        {/* Company badges — up to 2 visible, +N overflow */}
+        {visibleCompanies.map((c) => {
+          const col = companyColor(c);
+          return (
+            <span key={c} style={{
+              fontSize: 10, fontWeight: 600,
+              background: col.bg, color: col.text,
+              padding: "3px 9px", borderRadius: 99,
+              border: `1px solid ${col.text}22`,
+              flexShrink: 0, whiteSpace: "nowrap",
+              letterSpacing: "0.02em",
+            }}>
+              {c}
+            </span>
+          );
+        })}
+        {extraCount > 0 && (
+          <span style={{
+            fontSize: 10, fontWeight: 600,
+            background: "var(--bg-hover)", color: "var(--text-faint)",
+            padding: "3px 9px", borderRadius: 99,
+            border: "1px solid var(--border)", flexShrink: 0,
+          }}>
+            +{extraCount}
+          </span>
+        )}
 
         {/* Topic */}
         <span style={{
@@ -98,7 +153,7 @@ export default function QuestionCard({ question, onStatusChange, onAddNote, onGe
           {difficulty}
         </span>
 
-        {/* Note buttons */}
+        {/* Note button */}
         <button
           onClick={() => setNoteOpen(true)}
           style={{
@@ -147,6 +202,17 @@ export default function QuestionCard({ question, onStatusChange, onAddNote, onGe
           onClose={() => setNoteOpen(false)}
           onSave={onAddNote}
           getNotes={onGetNotes}
+        />
+      )}
+
+      {/* Detail Modal */}
+      {detailOpen && (
+        <QuestionDetailModal
+          question={question}
+          onClose={() => setDetailOpen(false)}
+          onStatusChange={onStatusChange}
+          onAddNote={onAddNote}
+          onGetNotes={onGetNotes}
         />
       )}
     </>

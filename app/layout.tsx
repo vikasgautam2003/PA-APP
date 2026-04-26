@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { initTheme, loadPersistedSettings } from "@/store/settingsStore";
+import { loadGmailCache } from "@/store/gmailCacheStore";
+import { loadCalendarCache } from "@/store/calendarCacheStore";
 import Sidebar from "@/components/layout/Sidebar";
 import "./globals.css";
 
@@ -18,6 +20,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     initTheme();
     loadPersistedSettings();
+    loadGmailCache();
+    loadCalendarCache();
     document.title = "Ares";
   }, []);
 

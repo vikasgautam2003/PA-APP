@@ -4,10 +4,11 @@ import type {
   Transaction, CategorySummary, ScenarioProjection, MonthlySnapshot,
 } from "@/types";
 
-type FinanceTab = "overview" | "transactions" | "predictions" | "settings";
+export type FinanceTab = "reality" | "crystal" | "guru";
 
 interface FinanceStore {
   activeTab: FinanceTab;
+  settingsOpen: boolean;
   data: FinanceData;
   projection: SavingsProjection | null;
   categorySummaries: CategorySummary[];
@@ -17,7 +18,9 @@ interface FinanceStore {
   messages: ChatMessage[];
   isLoading: boolean;
   isChatLoading: boolean;
+
   setActiveTab: (t: FinanceTab) => void;
+  setSettingsOpen: (v: boolean) => void;
   setData: (d: FinanceData) => void;
   setProjection: (p: SavingsProjection) => void;
   setCategorySummaries: (s: CategorySummary[]) => void;
@@ -37,7 +40,8 @@ const DEFAULT_DATA: FinanceData = {
 };
 
 export const useFinanceStore = create<FinanceStore>((set) => ({
-  activeTab: "overview",
+  activeTab: "reality",
+  settingsOpen: false,
   data: DEFAULT_DATA,
   projection: null,
   categorySummaries: [],
@@ -47,7 +51,9 @@ export const useFinanceStore = create<FinanceStore>((set) => ({
   messages: [],
   isLoading: false,
   isChatLoading: false,
+
   setActiveTab: (activeTab) => set({ activeTab }),
+  setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setData: (data) => set({ data }),
   setProjection: (projection) => set({ projection }),
   setCategorySummaries: (categorySummaries) => set({ categorySummaries }),

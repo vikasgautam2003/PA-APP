@@ -119,9 +119,24 @@ pub fn run() {
                         topic      TEXT NOT NULL,
                         difficulty TEXT NOT NULL,
                         link       TEXT,
-                        notes      TEXT
+                        notes      TEXT,
+                        companies  TEXT DEFAULT ''
                     )"
                 ).execute(&pool).await.expect("Failed to create dsa_questions table");
+
+                // Add companies column if upgrading from an older schema
+                let has_companies: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM pragma_table_info('dsa_questions') WHERE name = 'companies'"
+                )
+                .fetch_one(&pool)
+                .await
+                .unwrap_or(0);
+                if has_companies == 0 {
+                    sqlx::query("ALTER TABLE dsa_questions ADD COLUMN companies TEXT DEFAULT ''")
+                        .execute(&pool)
+                        .await
+                        .expect("Failed to add companies column");
+                }
 
                 sqlx::query(
                     "CREATE TABLE IF NOT EXISTS dsa_progress (

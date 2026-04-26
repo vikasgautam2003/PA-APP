@@ -2,7 +2,8 @@ import { useEffect, useMemo } from "react";
 import { useDSAStore } from "@/store/dsaStore";
 import { useAuthStore } from "@/store/authStore";
 import { getDb } from "@/lib/db";
-import type { DSAQuestionWithProgress, TopicProgress, HeatmapEntry } from "@/types";
+import { seedDSAQuestions } from "@/lib/seed";
+import type { DSAQuestionWithProgress, TopicProgress, HeatmapEntry, CompanyProgress } from "@/types";
 
 export function useDSA() {
   const { user } = useAuthStore();
@@ -16,11 +17,14 @@ export function useDSA() {
   async function loadQuestions() {
     store.setLoading(true);
     try {
+      // Seed questions if needed (no-op if already seeded; patches companies for existing rows)
+      await seedDSAQuestions();
+
       const db = await getDb();
 
       const questions = await db.select<DSAQuestionWithProgress[]>(`
         SELECT
-          q.id, q.title, q.topic, q.difficulty, q.link, q.notes,
+          q.id, q.title, q.topic, q.difficulty, q.link, q.notes, q.companies,
           COALESCE(p.status, 'todo') as status,
           p.user_notes,
           p.solved_at
@@ -32,7 +36,6 @@ export function useDSA() {
 
       store.setQuestions(questions);
 
-      // Topic progress
       const topicProgress = await db.select<TopicProgress[]>(`
         SELECT
           q.topic,
@@ -47,7 +50,23 @@ export function useDSA() {
 
       store.setTopicProgress(topicProgress);
 
-      // Heatmap — last 365 days
+      // Company progress computed client-side
+      const companyMap = new Map<string, CompanyProgress>();
+      for (const q of questions) {
+        if (!q.companies) continue;
+        for (const raw of q.companies.split(",")) {
+          const company = raw.trim();
+          if (!company) continue;
+          const entry = companyMap.get(company) ?? { company, total: 0, done: 0 };
+          entry.total++;
+          if (q.status === "done") entry.done++;
+          companyMap.set(company, entry);
+        }
+      }
+      store.setCompanyProgress(
+        Array.from(companyMap.values()).sort((a, b) => b.total - a.total)
+      );
+
       const heatmap = await db.select<HeatmapEntry[]>(`
         SELECT date(solved_at) as date, COUNT(*) as count
         FROM dsa_progress
@@ -61,10 +80,7 @@ export function useDSA() {
     }
   }
 
-  async function updateStatus(
-    questionId: number,
-    status: "todo" | "solving" | "done"
-  ) {
+  async function updateStatus(questionId: number, status: "todo" | "solving" | "done") {
     if (!user) return;
     const db = await getDb();
     const solvedAt = status === "done" ? new Date().toISOString() : null;
@@ -83,25 +99,32 @@ export function useDSA() {
 
   const filtered = useMemo(() => {
     return store.questions.filter((q) => {
-      if (store.selectedTopic !== "All" && q.topic !== store.selectedTopic)
-        return false;
-      if (store.filterDifficulty !== "All" && q.difficulty !== store.filterDifficulty)
-        return false;
-      if (store.filterStatus !== "All" && q.status !== store.filterStatus)
-        return false;
-      if (
-        store.searchQuery &&
-        !q.title.toLowerCase().includes(store.searchQuery.toLowerCase())
-      )
-        return false;
+      if (store.mainTab === "companies") {
+        if (store.selectedCompany !== "All") {
+          const list = q.companies?.split(",").map((c) => c.trim()) ?? [];
+          if (!list.includes(store.selectedCompany)) return false;
+        }
+      } else {
+        if (store.selectedTopic !== "All" && q.topic !== store.selectedTopic) return false;
+      }
+      if (store.filterDifficulty !== "All" && q.difficulty !== store.filterDifficulty) return false;
+      if (store.filterStatus !== "All" && q.status !== store.filterStatus) return false;
+      if (store.searchQuery && !q.title.toLowerCase().includes(store.searchQuery.toLowerCase())) return false;
       return true;
     });
-  }, [store.questions, store.selectedTopic, store.filterDifficulty, store.filterStatus, store.searchQuery]);
+  }, [store.questions, store.selectedTopic, store.selectedCompany, store.mainTab, store.filterDifficulty, store.filterStatus, store.searchQuery]);
 
   const totalDone = useMemo(
     () => store.questions.filter((q) => q.status === "done").length,
     [store.questions]
   );
+
+  const easySolved  = useMemo(() => store.questions.filter((q) => q.status === "done" && q.difficulty === "Easy").length,   [store.questions]);
+  const medSolved   = useMemo(() => store.questions.filter((q) => q.status === "done" && q.difficulty === "Medium").length, [store.questions]);
+  const hardSolved  = useMemo(() => store.questions.filter((q) => q.status === "done" && q.difficulty === "Hard").length,   [store.questions]);
+  const easyTotal   = useMemo(() => store.questions.filter((q) => q.difficulty === "Easy").length,   [store.questions]);
+  const medTotal    = useMemo(() => store.questions.filter((q) => q.difficulty === "Medium").length, [store.questions]);
+  const hardTotal   = useMemo(() => store.questions.filter((q) => q.difficulty === "Hard").length,   [store.questions]);
 
   async function addNote(questionId: number, content: string): Promise<void> {
     const db = await getDb();
@@ -123,6 +146,8 @@ export function useDSA() {
     ...store,
     filtered,
     totalDone,
+    easySolved, medSolved, hardSolved,
+    easyTotal, medTotal, hardTotal,
     updateStatus,
     addNote,
     getNotes,

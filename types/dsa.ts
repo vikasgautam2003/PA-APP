@@ -8,6 +8,7 @@ export interface DSAQuestion {
   difficulty: Difficulty;
   link: string | null;
   notes: string | null;
+  companies: string | null;
 }
 
 export interface DSAProgress {
@@ -31,6 +32,12 @@ export interface TopicProgress {
   total: number;
   done: number;
   solving: number;
+}
+
+export interface CompanyProgress {
+  company: string;
+  total: number;
+  done: number;
 }
 
 export interface HeatmapEntry {

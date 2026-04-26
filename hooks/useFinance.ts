@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useFinanceStore } from "@/store/financeStore";
 import { useAuthStore } from "@/store/authStore";
 import { getDb } from "@/lib/db";
@@ -53,10 +53,8 @@ export function useFinance() {
     store.setLoading(true);
     try {
       const db = await getDb();
-
       const rows = await db.select<FinanceData[]>(
-        "SELECT * FROM finances WHERE user_id = ?",
-        [user!.id]
+        "SELECT * FROM finances WHERE user_id = ?", [user!.id]
       );
       const data = rows.length > 0 ? rows[0] : store.data;
       if (rows.length > 0) store.setData(data);
@@ -75,7 +73,6 @@ export function useFinance() {
         [user!.id]
       );
       store.setSnapshots(snaps);
-
       computeAll(data, txns);
     } finally {
       store.setLoading(false);
@@ -87,9 +84,7 @@ export function useFinance() {
       .reduce((sum, k) => sum + (Number(data[k]) || 0), 0);
     const calc = calculateSavings(data.stipend, budgetExpenses);
     const monthsToGoal = data.savings_goal > 0 && calc.monthly > 0
-      ? Math.ceil(data.savings_goal / calc.monthly)
-      : null;
-
+      ? Math.ceil(data.savings_goal / calc.monthly) : null;
     store.setProjection({ ...calc, monthsToGoal });
 
     const spentByCategory: Record<string, number> = {};
@@ -103,68 +98,102 @@ export function useFinance() {
       const spent = spentByCategory[cat] || 0;
       const percent = budgeted > 0 ? Math.round((spent / budgeted) * 100) : 0;
       return {
-        category: cat,
-        budgeted,
-        spent,
-        percent,
+        category: cat, budgeted, spent, percent,
         color: CATEGORY_COLORS[cat],
         transactions: txns.filter((t) => t.category === cat),
       };
     }).filter((s) => s.budgeted > 0 || s.spent > 0);
     store.setCategorySummaries(summaries);
 
-    const totalActualSpent = txns.reduce((s, t) => s + t.amount, 0);
+    const totalSpent = txns.reduce((s, t) => s + t.amount, 0);
     const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
     const dayOfMonth = new Date().getDate();
     const projectedMonthlySpend = dayOfMonth > 0
-      ? (totalActualSpent / dayOfMonth) * daysInMonth
-      : budgetExpenses;
+      ? (totalSpent / dayOfMonth) * daysInMonth : budgetExpenses;
 
-    const currentActualSavings = data.stipend - projectedMonthlySpend;
+    const currentSavings = data.stipend - projectedMonthlySpend;
     const optimizedSavings = data.stipend - projectedMonthlySpend * 0.85;
     const aggressiveSavings = data.stipend - projectedMonthlySpend * 0.70;
 
-    function monthsTo(savings: number) {
-      if (!data.savings_goal || savings <= 0) return null;
-      return Math.ceil(data.savings_goal / savings);
+    function monthsTo(s: number) {
+      if (!data.savings_goal || s <= 0) return null;
+      return Math.ceil(data.savings_goal / s);
     }
-
-    function goalDate(months: number | null) {
-      if (!months) return null;
-      const d = new Date();
-      d.setMonth(d.getMonth() + months);
+    function goalDate(m: number | null) {
+      if (!m) return null;
+      const d = new Date(); d.setMonth(d.getMonth() + m);
       return d.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
     }
 
-    const scenarios: ScenarioProjection[] = [
-      {
-        label: "Pessimistic",
-        description: "If current spending pace continues",
-        monthlySavings: currentActualSavings,
-        monthsToGoal: monthsTo(currentActualSavings),
-        goalDate: goalDate(monthsTo(currentActualSavings)),
-        color: "#dc2626",
-      },
-      {
-        label: "Realistic",
-        description: "Cut 15% from variable expenses",
-        monthlySavings: optimizedSavings,
-        monthsToGoal: monthsTo(optimizedSavings),
-        goalDate: goalDate(monthsTo(optimizedSavings)),
-        color: "#d97706",
-      },
-      {
-        label: "Optimistic",
-        description: "Cut 30% from variable expenses",
-        monthlySavings: aggressiveSavings,
-        monthsToGoal: monthsTo(aggressiveSavings),
-        goalDate: goalDate(monthsTo(aggressiveSavings)),
-        color: "#16a34a",
-      },
-    ];
-    store.setScenarios(scenarios);
+    store.setScenarios([
+      { label: "Current Pace", description: "If you keep spending like now", monthlySavings: currentSavings, monthsToGoal: monthsTo(currentSavings), goalDate: goalDate(monthsTo(currentSavings)), color: currentSavings < 0 ? "#dc2626" : "#d97706" },
+      { label: "Cut 15%",     description: "Trim variable expenses by 15%",  monthlySavings: optimizedSavings, monthsToGoal: monthsTo(optimizedSavings), goalDate: goalDate(monthsTo(optimizedSavings)), color: "#d97706" },
+      { label: "Cut 30%",     description: "Aggressive 30% reduction",        monthlySavings: aggressiveSavings, monthsToGoal: monthsTo(aggressiveSavings), goalDate: goalDate(monthsTo(aggressiveSavings)), color: "#16a34a" },
+    ]);
   }
 
+  // ── Daily allowance (with rollover) ──────────────────────────────────────
+  const dailyStats = useMemo(() => {
+    const { data, transactions } = store;
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const dayOfMonth = today.getDate();
+    const daysRemaining = daysInMonth - dayOfMonth + 1;
+
+    // Free cash after fixed costs (rent + savings_goal)
+    const monthlyFreeCash = Math.max(0, data.stipend - data.rent - data.savings_goal);
+    const dailyBudget = monthlyFreeCash / daysInMonth;
+
+    const spentBeforeToday = transactions
+      .filter((t) => t.date < todayStr)
+      .reduce((s, t) => s + t.amount, 0);
+    const spentToday = transactions
+      .filter((t) => t.date === todayStr)
+      .reduce((s, t) => s + t.amount, 0);
+
+    const expectedByYesterday = dailyBudget * (dayOfMonth - 1);
+    const rollover = expectedByYesterday - spentBeforeToday;
+    const todayAllowance = dailyBudget + Math.max(0, rollover); // never add deficit here
+    const remainingToday = todayAllowance - spentToday;
+    const totalSpentThisMonth = transactions.reduce((s, t) => s + t.amount, 0);
+    const projectedMonthSpend = dayOfMonth > 0
+      ? (totalSpentThisMonth / dayOfMonth) * daysInMonth : 0;
+    const projectedMonthlySavings = data.stipend - data.rent - projectedMonthSpend;
+
+    return {
+      dailyBudget, todayAllowance, remainingToday,
+      spentToday, rollover: Math.max(0, rollover),
+      totalSpentThisMonth, projectedMonthSpend, projectedMonthlySavings,
+      daysInMonth, dayOfMonth, daysRemaining,
+      monthlyFreeCash,
+    };
+  }, [store.data, store.transactions]);
+
+  // ── Budget warnings ───────────────────────────────────────────────────────
+  const budgetWarnings = useMemo(() => {
+    const { dayOfMonth, daysInMonth } = dailyStats;
+    const monthPct = dayOfMonth / daysInMonth;
+    return store.categorySummaries.filter((s) => {
+      if (s.budgeted === 0) return false;
+      const budgetPct = s.spent / s.budgeted;
+      return budgetPct > 0.70 && monthPct < 0.70; // overpacing
+    });
+  }, [store.categorySummaries, dailyStats]);
+
+  // ── Expense impact ────────────────────────────────────────────────────────
+  function calcExpenseImpact(amount: number) {
+    const { data, scenarios } = store;
+    const monthlySavings = scenarios[0]?.monthlySavings ?? 0;
+    if (!data.savings_goal || monthlySavings <= 0) return null;
+    const monthsToGoal = Math.ceil(data.savings_goal / monthlySavings);
+    const monthsRemaining = Math.max(1, monthsToGoal);
+    const extraPerMonth = amount / monthsRemaining;
+    const goalDelayMonths = amount / monthlySavings;
+    return { extraPerMonth, goalDelayMonths: Math.round(goalDelayMonths * 10) / 10 };
+  }
+
+  // ── Persistence ───────────────────────────────────────────────────────────
   async function saveSettings(d: FinanceData) {
     const db = await getDb();
     await db.execute(
@@ -202,76 +231,49 @@ export function useFinance() {
     await load();
   }
 
-  async function saveMonthlySnapshot() {
-    const db = await getDb();
-    const month = getCurrentMonth();
-    const totalSpent = store.transactions.reduce((s, t) => s + t.amount, 0);
-    const totalSaved = store.data.stipend - totalSpent;
-    const byCategory: Record<string, number> = {};
-    store.transactions.forEach((t) => {
-      byCategory[t.category] = (byCategory[t.category] || 0) + t.amount;
-    });
-    await db.execute(
-      `INSERT INTO finance_snapshots (user_id, month, total_spent, total_saved, actual_by_category)
-       VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(user_id, month) DO UPDATE SET
-         total_spent=excluded.total_spent,
-         total_saved=excluded.total_saved,
-         actual_by_category=excluded.actual_by_category`,
-      [user!.id, month, totalSpent, totalSaved, JSON.stringify(byCategory)]
-    );
-  }
-
   async function sendMessage(text: string) {
     const { data, transactions, scenarios, snapshots } = store;
     store.addMessage({ role: "user", content: text });
     store.setChatLoading(true);
     try {
-      const totalSpent = transactions.reduce((s, t) => s + t.amount, 0);
+      const { totalSpentThisMonth, projectedMonthlySavings, dailyBudget, remainingToday } = dailyStats;
       const byCategory = CATEGORIES.map((c) => {
         const spent = transactions.filter((t) => t.category === c).reduce((s, t) => s + t.amount, 0);
         return spent > 0 ? `${c}: ${data.currency}${spent}` : null;
       }).filter(Boolean).join(", ");
+      const snapshotCtx = snapshots.length > 0
+        ? snapshots.map((s) => `${s.month}: spent ${data.currency}${s.total_spent}, saved ${data.currency}${s.total_saved}`).join(" | ")
+        : "No history yet.";
 
-      const snapshotContext = snapshots.length > 0
-        ? `Last ${snapshots.length} months history: ` +
-          snapshots.map((s) => `${s.month}: spent ${data.currency}${s.total_spent}, saved ${data.currency}${s.total_saved}`).join(" | ")
-        : "No historical data yet.";
+      const system = `You are a friendly but firm personal finance guru named "Guru" for a developer named ${user?.username}.
+You have a warm, witty personality — like a smart friend who knows finance deeply.
+Never be generic. Use real numbers. Reference specific categories. Be concise (max 3 sentences).
 
-      const context = `You are a personal finance advisor for a developer/student in India.
+USER FINANCES:
+- Monthly stipend: ${data.currency}${data.stipend}
+- Fixed costs: Rent ${data.currency}${data.rent}
+- Budgets: Food ${data.currency}${data.food}, Transport ${data.currency}${data.transport}, Subscriptions ${data.currency}${data.subscriptions}, Misc ${data.currency}${data.misc}
+- Savings goal: ${data.currency}${data.savings_goal} by ${data.target_date ?? "no target date"}
 
-USER FINANCIAL PROFILE:
-- Monthly Stipend: ${data.currency}${data.stipend}
-- Budget: Rent ${data.currency}${data.rent}, Food ${data.currency}${data.food}, Transport ${data.currency}${data.transport}, Subscriptions ${data.currency}${data.subscriptions}, Misc ${data.currency}${data.misc}
-- Savings Goal: ${data.currency}${data.savings_goal}
-- Target Date: ${data.target_date ?? "Not set"}
+THIS MONTH (day ${dailyStats.dayOfMonth} of ${dailyStats.daysInMonth}):
+- Total spent: ${data.currency}${Math.round(totalSpentThisMonth)}
+- By category: ${byCategory || "nothing yet"}
+- Daily allowance: ${data.currency}${Math.round(dailyBudget)}/day
+- Remaining today: ${data.currency}${Math.round(remainingToday)}
+- Projected monthly savings: ${data.currency}${Math.round(projectedMonthlySavings)}
 
-THIS MONTH SO FAR:
-- Total Spent: ${data.currency}${totalSpent}
-- By Category: ${byCategory || "No transactions yet"}
-- Days into month: ${new Date().getDate()} of ${new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()}
-
-SCENARIOS:
-- Pessimistic (current pace): saves ${data.currency}${Math.round(scenarios[0]?.monthlySavings ?? 0)}/month, goal in ${scenarios[0]?.monthsToGoal ?? "?"} months
-- Realistic (cut 15%): saves ${data.currency}${Math.round(scenarios[1]?.monthlySavings ?? 0)}/month, goal in ${scenarios[1]?.monthsToGoal ?? "?"} months
-- Optimistic (cut 30%): saves ${data.currency}${Math.round(scenarios[2]?.monthlySavings ?? 0)}/month, goal in ${scenarios[2]?.monthsToGoal ?? "?"} months
-
-HISTORICAL TRENDS:
-${snapshotContext}
-
-Give specific, actionable advice based on actual numbers. Be concise and direct. Use ${data.currency} for amounts.
-
-User: ${text}`;
+SCENARIO AT CURRENT PACE: goal in ${scenarios[0]?.monthsToGoal ?? "?"} months (${scenarios[0]?.goalDate ?? "unknown"})
+HISTORY: ${snapshotCtx}`;
 
       const reply = await askGroqChat(
         store.messages.map((m) => ({ role: m.role, content: m.content })),
-        context.split(`User: ${text}`)[0]
+        system
       );
       store.addMessage({ role: "assistant", content: reply });
     } catch (e) {
       store.addMessage({
         role: "assistant",
-        content: e instanceof Error ? e.message : "Check your Gemini API key in Settings.",
+        content: e instanceof Error ? e.message : "Check your Groq key in Settings.",
       });
     } finally {
       store.setChatLoading(false);
@@ -280,10 +282,12 @@ User: ${text}`;
 
   return {
     ...store,
+    ...dailyStats,
+    budgetWarnings,
+    calcExpenseImpact,
     saveSettings,
     addTransaction,
     deleteTransaction,
-    saveMonthlySnapshot,
     sendMessage,
     reload: load,
   };

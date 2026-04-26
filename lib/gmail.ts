@@ -1,4 +1,5 @@
 import { useSettingsStore } from "@/store/settingsStore";
+import { askGroq } from "@/lib/groq";
 
 const nativeFetch = globalThis.fetch.bind(globalThis);
 
@@ -128,6 +129,27 @@ export async function fetchMeetingEmails(): Promise<GmailMessage[]> {
   } catch (e) {
     console.error("Gmail fetch error:", e);
     return [];
+  }
+}
+
+export async function rankImportantEmails(emails: GmailMessage[]): Promise<GmailMessage[]> {
+  if (emails.length === 0) return [];
+  const { groqKey } = useSettingsStore.getState();
+  if (!groqKey || emails.length <= 4) return emails.slice(0, 4);
+
+  const list = emails
+    .map((e, i) => `${i}. from="${e.from}" subject="${e.subject}"`)
+    .join("\n");
+
+  try {
+    const raw = await askGroq(
+      `Here are emails from an inbox:\n${list}\n\nPick the top 4 most important/urgent ones for a busy professional. Prioritise: action required, meetings, messages from real people, deadlines. Deprioritise: automated reports, AI summaries, newsletters, system notifications.\nReturn JSON: {"indexes":[n,n,n,n]}`,
+    );
+    const parsed = JSON.parse(raw) as { indexes: number[] };
+    const picked = parsed.indexes.slice(0, 4).map((i) => emails[i]).filter(Boolean);
+    return picked.length > 0 ? picked : emails.slice(0, 4);
+  } catch {
+    return emails.slice(0, 4);
   }
 }
 

@@ -1,41 +1,78 @@
-import type { TopicProgress } from "@/types";
+interface Props {
+  totalDone: number;
+  total: number;
+  easySolved: number; easyTotal: number;
+  medSolved: number;  medTotal: number;
+  hardSolved: number; hardTotal: number;
+}
 
-interface Props { topicProgress: TopicProgress[]; totalDone: number; total: number; }
-
-export default function ProgressBar({ topicProgress, totalDone, total }: Props) {
+export default function ProgressBar({ totalDone, total, easySolved, easyTotal, medSolved, medTotal, hardSolved, hardTotal }: Props) {
   const pct = total > 0 ? Math.round((totalDone / total) * 100) : 0;
 
+  const diffs = [
+    { label: "Easy",   solved: easySolved, tot: easyTotal, color: "var(--easy)",   bg: "var(--easy-bg)"   },
+    { label: "Medium", solved: medSolved,  tot: medTotal,  color: "var(--medium)", bg: "var(--medium-bg)" },
+    { label: "Hard",   solved: hardSolved, tot: hardTotal, color: "var(--hard)",   bg: "var(--hard-bg)"   },
+  ];
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ border: "1px solid var(--border)", borderRadius: 16, padding: "20px 24px", background: "var(--bg-elevated)", boxShadow: "var(--shadow-card)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-secondary)" }}>Overall Progress</span>
-          <span style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.03em" }}>
-            {totalDone}<span style={{ fontSize: 14, color: "var(--text-muted)", fontWeight: 400 }}> / {total}</span>
-          </span>
-        </div>
-        <div style={{ height: 6, background: "var(--border)", borderRadius: 99, overflow: "hidden" }}>
+    <div style={{
+      border: "1px solid var(--border)", borderRadius: 16, padding: "20px 22px",
+      background: "var(--bg-elevated)", boxShadow: "var(--shadow-card)",
+      display: "flex", flexDirection: "column", gap: 14,
+    }}>
+      {/* Overall */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-secondary)" }}>Overall Progress</span>
+        <span style={{ fontSize: 20, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.03em" }}>
+          {totalDone}
+          <span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 400 }}> / {total}</span>
+        </span>
+      </div>
+
+      {/* Bar */}
+      <div>
+        <div style={{ height: 7, background: "var(--border)", borderRadius: 99, overflow: "hidden" }}>
           <div style={{
             height: "100%", width: `${pct}%`,
             background: "linear-gradient(90deg, var(--accent), var(--accent-text))",
             borderRadius: 99, transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
-            boxShadow: "0 0 12px var(--accent-glow)",
+            boxShadow: "0 0 10px var(--accent-glow)",
           }} />
         </div>
-        <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8 }}>{pct}% complete</p>
+        <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 5 }}>{pct}% complete</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {topicProgress.slice(0, 8).map((t) => {
-          const p = t.total > 0 ? Math.round((t.done / t.total) * 100) : 0;
+      {/* Difficulty cards — vertical layout so label never squishes into count */}
+      <div style={{ display: "flex", gap: 8 }}>
+        {diffs.map(({ label, solved, tot, color, bg }) => {
+          const p = tot > 0 ? Math.round((solved / tot) * 100) : 0;
           return (
-            <div key={t.topic} style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "12px 16px", background: "var(--bg-elevated)", boxShadow: "var(--shadow-card)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 500, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>{t.topic}</span>
-                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t.done}/{t.total}</span>
-              </div>
-              <div style={{ height: 3, background: "var(--border)", borderRadius: 99 }}>
-                <div style={{ height: "100%", width: `${p}%`, background: "var(--accent)", borderRadius: 99 }} />
+            <div key={label} style={{
+              flex: 1, display: "flex", flexDirection: "column", gap: 8,
+              padding: "12px 14px", borderRadius: 10,
+              background: bg, border: `1px solid ${color}25`,
+              minWidth: 0,
+            }}>
+              {/* Label row */}
+              <span style={{
+                fontSize: 11, fontWeight: 700, color,
+                letterSpacing: "0.02em",
+              }}>
+                {label}
+              </span>
+
+              {/* Count */}
+              <span style={{ fontSize: 16, fontWeight: 700, color, lineHeight: 1 }}>
+                {solved}
+                <span style={{ fontSize: 11, fontWeight: 400, opacity: 0.6 }}>
+                  {" "}/{tot}
+                </span>
+              </span>
+
+              {/* Mini bar */}
+              <div style={{ height: 2, background: `${color}28`, borderRadius: 99 }}>
+                <div style={{ height: "100%", width: `${p}%`, background: color, borderRadius: 99 }} />
               </div>
             </div>
           );
