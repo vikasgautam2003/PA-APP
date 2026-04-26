@@ -30,15 +30,15 @@ export default function PlannerPage() {
         title="Weekly Planner"
         subtitle="AI-powered study planning · tracks your progress"
         action={
-          <div style={{ display: "flex", gap: 2, background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 12, padding: 4 }}>
+          <div style={{ display: "flex", gap: 1, background: "var(--bg-base)", border: "1px solid var(--border)", borderRadius: 10, padding: 3 }}>
             {TABS.map(({ id, label }) => (
               <button key={id} onClick={() => setActiveTab(id)} style={{
-                padding: "7px 18px", borderRadius: 9, fontSize: 13,
+                padding: "6px 16px", borderRadius: 7, fontSize: 13,
                 fontWeight: activeTab === id ? 600 : 400, cursor: "pointer", border: "none",
-                background: activeTab === id ? "var(--accent)" : "transparent",
-                color: activeTab === id ? "#fff" : "var(--text-muted)",
-                boxShadow: activeTab === id ? "0 0 12px var(--accent-glow)" : "none",
-                transition: "all 0.15s",
+                background: activeTab === id ? "var(--bg-surface)" : "transparent",
+                color: activeTab === id ? "var(--text-primary)" : "var(--text-muted)",
+                boxShadow: activeTab === id ? "var(--shadow-card)" : "none",
+                transition: "all 0.12s",
               }}>{label}</button>
             ))}
           </div>

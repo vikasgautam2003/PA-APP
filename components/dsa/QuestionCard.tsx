@@ -34,6 +34,7 @@ export default function QuestionCard({ question, onStatusChange, onAddNote, onGe
           border: `1px solid ${done ? "var(--easy-bg)" : "var(--border)"}`,
           borderRadius: 12,
           background: done ? "var(--easy-bg)" : "var(--bg-elevated)",
+          boxShadow: "var(--shadow-card)",
           cursor: "default",
         }}
         onMouseEnter={(e) => {

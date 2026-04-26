@@ -104,7 +104,7 @@ export default function CelebrationOverlay({ onDone }: Props) {
         animation: "popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards",
       }}>
         <Image
-          src="/icon.png"
+          src="/ares-logo.svg"
           alt="Ares"
           width={80}
           height={80}

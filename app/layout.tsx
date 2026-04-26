@@ -31,24 +31,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   if (isLoading) {
     return (
       <html lang="en"><body style={{
-        background: "#060608", display: "flex", alignItems: "center",
+        background: "var(--bg-base)", display: "flex", alignItems: "center",
         justifyContent: "center", height: "100vh", gap: 12,
       }}>
         <div style={{ width: 24, height: 24, borderRadius: 7, background: "#2563eb", animation: "pulse 1.5s infinite" }} />
-        <span style={{ color: "#4b5563", fontSize: 14 }}>Loading Ares…</span>
+        <span style={{ color: "var(--text-muted)", fontSize: 14 }}>Loading Ares…</span>
       </body></html>
     );
   }
 
   if (!isAuthenticated) {
-    return <html lang="en"><body style={{ background: "#060608" }}>{children}</body></html>;
+    return <html lang="en"><body style={{ background: "var(--bg-base)" }}>{children}</body></html>;
   }
 
   return (
     <html lang="en">
-      <body style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "#060608" }}>
+      <body style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "var(--bg-base)" }}>
         <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen((p) => !p)} />
-        <main style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", background: "#0c0c10", borderRadius: sidebarOpen ? "16px 0 0 16px" : 0, transition: "border-radius 0.3s ease" }}>
+        <main style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", background: "var(--bg-surface)" }}>
           {children}
         </main>
       </body>

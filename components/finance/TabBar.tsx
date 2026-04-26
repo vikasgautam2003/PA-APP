@@ -18,10 +18,10 @@ const TABS: { id: Tab; label: string }[] = [
 export default function TabBar({ active, onChange, counts }: Props) {
   return (
     <div style={{
-      display: "flex", gap: 2,
-      background: "var(--bg-elevated)",
+      display: "flex", gap: 1,
+      background: "var(--bg-base)",
       border: "1px solid var(--border)",
-      borderRadius: 12, padding: 4,
+      borderRadius: 10, padding: 3,
       width: "fit-content",
     }}>
       {TABS.map(({ id, label }) => {
@@ -29,20 +29,20 @@ export default function TabBar({ active, onChange, counts }: Props) {
         const count = id === "transactions" ? counts?.transactions : undefined;
         return (
           <button key={id} onClick={() => onChange(id)} type="button" style={{
-            padding: "7px 18px", borderRadius: 9, fontSize: 13,
+            padding: "6px 16px", borderRadius: 7, fontSize: 13,
             fontWeight: isActive ? 600 : 400, cursor: "pointer",
             border: "none",
-            background: isActive ? "var(--accent)" : "transparent",
-            color: isActive ? "#fff" : "var(--text-muted)",
-            boxShadow: isActive ? "0 0 12px var(--accent-glow)" : "none",
-            transition: "all 0.15s",
+            background: isActive ? "var(--bg-surface)" : "transparent",
+            color: isActive ? "var(--text-primary)" : "var(--text-muted)",
+            boxShadow: isActive ? "var(--shadow-card)" : "none",
+            transition: "all 0.12s",
             display: "flex", alignItems: "center", gap: 6,
           }}>
             {label}
             {count !== undefined && count > 0 && (
               <span style={{
                 fontSize: 10, fontWeight: 700,
-                background: isActive ? "rgba(255,255,255,0.25)" : "var(--accent-glow)",
+                background: isActive ? "var(--accent)" : "var(--accent-glow)",
                 color: isActive ? "#fff" : "var(--accent-text)",
                 padding: "1px 6px", borderRadius: 99,
               }}>{count}</span>

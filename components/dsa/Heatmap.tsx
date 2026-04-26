@@ -28,7 +28,7 @@ export default function Heatmap({ heatmap }: Props) {
   };
 
   return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 16, padding: "20px 24px", background: "var(--bg-elevated)" }}>
+    <div style={{ border: "1px solid var(--border)", borderRadius: 16, padding: "20px 24px", background: "var(--bg-elevated)", boxShadow: "var(--shadow-card)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 16 }}>
         <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-secondary)" }}>Activity</span>
         <span style={{ fontSize: 11, color: "var(--text-muted)" }}>

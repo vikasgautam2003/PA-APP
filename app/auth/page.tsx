@@ -52,34 +52,17 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
         transition: "opacity 0.8s cubic-bezier(0.34,1.56,0.64,1), transform 0.8s cubic-bezier(0.34,1.56,0.64,1)",
       }}>
         {/* Icon */}
-        <div style={{
-          width: 96, height: 96, borderRadius: 28,
-          background: "linear-gradient(135deg, #2563eb, #7c3aed)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 0 80px #2563eb50, 0 0 160px #7c3aed20, 0 20px 60px rgba(0,0,0,0.5)",
-          animation: "logoPulse 3s ease-in-out infinite",
-          position: "relative", overflow: "hidden",
-        }}>
-          {/* Shine overlay */}
-          <div style={{
-            position: "absolute", inset: 0,
-            background: "linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%)",
-            borderRadius: 28,
-          }} />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/icon.png"
-            alt="Ares"
-            style={{ width: 60, height: 60, objectFit: "contain", position: "relative", zIndex: 1 }}
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
-          <span style={{
-            position: "absolute", fontSize: 42, fontWeight: 900, color: "#fff",
-            letterSpacing: "-0.05em",
-          }}>A</span>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/ares-logo.svg"
+          alt="Ares"
+          style={{
+            width: 96, height: 96, borderRadius: 28,
+            objectFit: "cover",
+            boxShadow: "0 0 80px #2563eb50, 0 0 160px #1e6af530, 0 20px 60px rgba(0,0,0,0.5)",
+            animation: "logoPulse 3s ease-in-out infinite",
+          }}
+        />
 
         {/* App name */}
         <div style={{ textAlign: "center" }}>
@@ -233,24 +216,14 @@ export default function AuthPage() {
             display: "flex", flexDirection: "column", alignItems: "center",
             gap: 16, marginBottom: 40,
           }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: 20,
-              background: "linear-gradient(135deg, #2563eb, #7c3aed)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 0 40px #2563eb40, 0 8px 32px rgba(0,0,0,0.4)",
-              position: "relative", overflow: "hidden",
-            }}>
-              <div style={{
-                position: "absolute", inset: 0,
-                background: "linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%)",
-              }} />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icon.png" alt="Ares"
-                style={{ width: 40, height: 40, objectFit: "contain", position: "relative", zIndex: 1 }}
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-              />
-              <span style={{ position: "absolute", fontSize: 28, fontWeight: 900, color: "#fff" }}>A</span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/ares-logo.svg" alt="Ares"
+              style={{
+                width: 64, height: 64, borderRadius: 20,
+                objectFit: "cover",
+                boxShadow: "0 0 40px #2563eb40, 0 8px 32px rgba(0,0,0,0.4)",
+              }}
+            />
 
             <div style={{ textAlign: "center" }}>
               <h1 style={{

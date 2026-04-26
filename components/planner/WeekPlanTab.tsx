@@ -14,11 +14,11 @@ interface Props {
 }
 
 const STATUS_STYLES: Record<string, { border: string; bg: string; headerBg: string; dot: string; label: string; labelColor: string }> = {
-  green:   { border: "#16a34a",   bg: "#f0fdf4",   headerBg: "#dcfce7", dot: "#16a34a",   label: "Complete", labelColor: "#16a34a"   },
-  amber:   { border: "#d97706",   bg: "#fffbeb",   headerBg: "#fef3c7", dot: "#d97706",   label: "Partial",  labelColor: "#d97706"   },
-  red:     { border: "#dc2626",   bg: "#fef2f2",   headerBg: "#fee2e2", dot: "#dc2626",   label: "Missed",   labelColor: "#dc2626"   },
-  pending: { border: "#e5e7eb",   bg: "#ffffff",   headerBg: "#f9fafb", dot: "#9ca3af",   label: "Upcoming", labelColor: "#9ca3af"   },
-  rest:    { border: "#e5e7eb",   bg: "#fafafa",   headerBg: "#f3f4f6", dot: "#d1d5db",   label: "Rest",     labelColor: "#9ca3af"   },
+  green:   { border: "var(--easy)",   bg: "var(--easy-bg)",   headerBg: "var(--easy-bg)",    dot: "var(--easy)",   label: "Complete", labelColor: "var(--easy)"   },
+  amber:   { border: "var(--medium)", bg: "var(--medium-bg)", headerBg: "var(--medium-bg)",  dot: "var(--medium)", label: "Partial",  labelColor: "var(--medium)" },
+  red:     { border: "var(--hard)",   bg: "var(--hard-bg)",   headerBg: "var(--hard-bg)",    dot: "var(--hard)",   label: "Missed",   labelColor: "var(--hard)"   },
+  pending: { border: "var(--border)", bg: "var(--bg-elevated)", headerBg: "var(--bg-base)",  dot: "var(--text-faint)", label: "Upcoming", labelColor: "var(--text-muted)" },
+  rest:    { border: "var(--border)", bg: "var(--bg-elevated)", headerBg: "var(--bg-base)",  dot: "var(--border)",     label: "Rest",     labelColor: "var(--text-muted)" },
 };
 
 const DIFF_COLOR: Record<string, string> = {
@@ -175,11 +175,11 @@ export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, 
                   background: style.bg,
                   overflow: "hidden",
                   boxShadow: isToday
-                    ? "0 0 0 3px #2563eb25"
-                    : day.status === "green" ? "0 0 0 2px #16a34a20"
-                    : day.status === "amber" ? "0 0 0 2px #d9770620"
-                    : day.status === "red"   ? "0 0 0 2px #dc262620"
-                    : "none",
+                    ? "0 0 0 3px #2563eb25, var(--shadow-card)"
+                    : day.status === "green" ? "0 0 0 2px #16a34a20, var(--shadow-card)"
+                    : day.status === "amber" ? "0 0 0 2px #d9770620, var(--shadow-card)"
+                    : day.status === "red"   ? "0 0 0 2px #dc262620, var(--shadow-card)"
+                    : "var(--shadow-card)",
                   transition: "all 0.25s ease",
                 }}>
                   {/* Day header */}
@@ -243,9 +243,9 @@ export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, 
                         <div key={`${item.type}-${item.id}`} style={{
                           display: "flex", alignItems: "flex-start", gap: 10,
                           padding: "10px 12px", borderRadius: 10,
-                          background: item.is_done ? "transparent" : "#ffffff",
-                          border: `1px solid ${item.is_done ? "transparent" : "#e5e7eb"}`,
-                          boxShadow: item.is_done ? "none" : "0 1px 3px rgba(0,0,0,0.06)",
+                          background: item.is_done ? "transparent" : "var(--bg-surface)",
+                          border: `1px solid ${item.is_done ? "transparent" : "var(--border)"}`,
+                          boxShadow: item.is_done ? "none" : "var(--shadow-card)",
                           transition: "all 0.2s",
                           opacity: item.is_done ? 0.6 : 1,
                         }}>

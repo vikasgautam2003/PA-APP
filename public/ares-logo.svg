@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="1" x2="1" y2="0" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#1550e8"/>
+      <stop offset="55%" stop-color="#1e6af5"/>
+      <stop offset="100%" stop-color="#38b2f8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="200" height="200" fill="url(#bg)"/>
+
+  <!-- Left wing - upper sweep -->
+  <path d="M6,85 C38,50 74,60 100,100 C62,76 26,70 6,85Z" fill="white" opacity="0.22"/>
+  <!-- Left wing - lower sweep -->
+  <path d="M10,110 C40,78 74,82 100,100 C64,92 28,96 10,110Z" fill="white" opacity="0.14"/>
+  <!-- Left wing - tip accent -->
+  <path d="M4,98 C30,64 70,68 100,100 C58,80 20,80 4,98Z" fill="white" opacity="0.08"/>
+
+  <!-- Right wing - upper sweep -->
+  <path d="M194,85 C162,50 126,60 100,100 C138,76 174,70 194,85Z" fill="white" opacity="0.22"/>
+  <!-- Right wing - lower sweep -->
+  <path d="M190,110 C160,78 126,82 100,100 C136,92 172,96 190,110Z" fill="white" opacity="0.14"/>
+  <!-- Right wing - tip accent -->
+  <path d="M196,98 C170,64 130,68 100,100 C142,80 180,80 196,98Z" fill="white" opacity="0.08"/>
+
+  <!-- ARES text -->
+  <text x="100" y="121"
+        text-anchor="middle"
+        font-family="'Arial Black', 'Arial Bold', Arial, 'Helvetica Neue', sans-serif"
+        font-weight="900"
+        font-size="58"
+        fill="white"
+        letter-spacing="1">ARES</text>
+
+  <!-- 4-pointed sparkle star at bottom-right -->
+  <path d="M183,182 L184.5,177 L186,182 L191,183.5 L186,185 L184.5,190 L183,185 L178,183.5Z"
+        fill="white" opacity="0.88"/>
+</svg>

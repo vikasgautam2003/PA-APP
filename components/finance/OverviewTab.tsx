@@ -15,7 +15,6 @@ export default function OverviewTab({ data, projection, summaries, onTabChange }
     .reduce((s, k) => s + (Number(data[k]) || 0), 0);
   const totalSpent = summaries.reduce((s, c) => s + c.spent, 0);
   const totalSaved = data.stipend - totalSpent;
-  const spentPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
 
   const fmt = (n: number) => {
     const abs = Math.abs(n);
@@ -35,6 +34,7 @@ export default function OverviewTab({ data, projection, summaries, onTabChange }
           <div key={label} style={{
             border: "1px solid var(--border)", borderRadius: 14,
             padding: "18px 20px", background: "var(--bg-elevated)",
+            boxShadow: "var(--shadow-card)",
           }}>
             <p style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</p>
             <p style={{ fontSize: 26, fontWeight: 800, color, letterSpacing: "-0.03em", marginBottom: 4 }}>{value}</p>
@@ -43,7 +43,7 @@ export default function OverviewTab({ data, projection, summaries, onTabChange }
         ))}
       </div>
 
-      <div style={{ border: "1px solid var(--border)", borderRadius: 14, padding: "20px 24px", background: "var(--bg-elevated)" }}>
+      <div style={{ border: "1px solid var(--border)", borderRadius: 14, padding: "20px 24px", background: "var(--bg-elevated)", boxShadow: "var(--shadow-card)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>Budget vs Actual</h3>
           <button type="button" onClick={() => onTabChange("transactions")} style={{
@@ -92,7 +92,7 @@ export default function OverviewTab({ data, projection, summaries, onTabChange }
       </div>
 
       {data.savings_goal > 0 && projection && (
-        <div style={{ border: "1px solid var(--border)", borderRadius: 14, padding: "20px 24px", background: "var(--bg-elevated)" }}>
+        <div style={{ border: "1px solid var(--border)", borderRadius: 14, padding: "20px 24px", background: "var(--bg-elevated)", boxShadow: "var(--shadow-card)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 }}>
             <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>Savings Goal</h3>
             <span style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.03em" }}>

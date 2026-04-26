@@ -6,6 +6,9 @@ import { useAuthStore } from "@/store/authStore";
 import { getDb } from "@/lib/db";
 import { askGroqChat } from "@/lib/groq";
 import { usePlanner } from "@/hooks/usePlanner";
+import { useGmail } from "@/hooks/useGmail";
+import { useCalendar } from "@/hooks/useCalendar";
+import { useSettingsStore } from "@/store/settingsStore";
 import TaskCheckbox from "@/components/planner/TaskCheckbox";
 import type { DayPlan, DayPlanItem } from "@/types";
 
@@ -30,6 +33,9 @@ function getWeekDays() {
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const { currentPlan, markItemDone } = usePlanner();
+  const { emails: gmailEmails, loading: gmailLoading, refetch: refetchGmail } = useGmail();
+  const { events: calEvents, loading: calLoading, noScope: calNoScope, refetch: refetchCal } = useCalendar();
+  const { gmailToken } = useSettingsStore();
   const [todayPlan, setTodayPlan] = useState<DayPlan | null>(null);
   const [brief, setBrief]         = useState<string>("");
   const [briefLoading, setBriefLoading] = useState(false);
@@ -302,8 +308,9 @@ Write today's brief.`;
           {/* Tasks */}
           {totalTasks === 0 ? (
             <div style={{
-              border: "1px solid var(--border)", borderRadius: 16,
+              border: "1px solid var(--border)", borderRadius: 12,
               padding: "48px 24px", background: "var(--bg-elevated)",
+              boxShadow: "var(--shadow-card)",
               display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginBottom: 24,
             }}>
               <span style={{ fontSize: 40 }}>▦</span>
@@ -320,9 +327,9 @@ Write today's brief.`;
                   <div key={key} style={{
                     display: "flex", alignItems: "center", gap: 14,
                     padding: "16px 20px", borderRadius: 14,
-                    border: `1.5px solid ${item.is_done ? "#bbf7d0" : "var(--border)"}`,
-                    background: item.is_done ? "#f0fdf4" : "var(--bg-elevated)",
-                    boxShadow: item.is_done ? "none" : "0 2px 8px rgba(0,0,0,0.04)",
+                    border: `1px solid ${item.is_done ? "var(--easy-bg)" : "var(--border)"}`,
+                    background: item.is_done ? "var(--easy-bg)" : "var(--bg-elevated)",
+                    boxShadow: item.is_done ? "none" : "var(--shadow-card)",
                     transition: "all 0.2s ease",
                     opacity: item.is_done ? 0.7 : 1,
                   }}>
@@ -377,8 +384,9 @@ Write today's brief.`;
 
           {/* AI Brief */}
           <div style={{
-            border: "1px solid var(--border)", borderRadius: 16,
+            border: "1px solid var(--border)", borderRadius: 12,
             overflow: "hidden", background: "var(--bg-elevated)",
+            boxShadow: "var(--shadow-card)",
           }}>
             <div style={{
               padding: "14px 20px",
@@ -516,166 +524,181 @@ Write today's brief.`;
           </div>
         </div>
 
-        {/* Right — Inbox + Week view */}
+        {/* Right — Calendar + Inbox + Stats */}
         <div style={{ overflowY: "auto", padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24 }}>
 
-          {/* Week at a glance */}
+          {/* Week strip */}
           <div>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
-              This Week
-            </p>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>This Week</p>
             <div style={{ display: "flex", gap: 6 }}>
               {getWeekDays().map((date) => {
-                const dayPlan = currentPlan?.days.find((d) => d.date === date);
-                const status  = dayPlan?.status ?? "pending";
-                const isToday = date === todayStr;
+                const dayPlan  = currentPlan?.days.find((d) => d.date === date);
+                const status   = dayPlan?.status ?? "pending";
+                const isToday  = date === todayStr;
                 const dotStyle = STATUS_DOT[status] ?? STATUS_DOT.pending;
                 const dayName  = DAY_NAMES[new Date(date + "T00:00:00").getDay()];
                 const dayNum   = new Date(date + "T00:00:00").getDate();
                 const done     = dayPlan?.items.filter((i) => i.is_done).length ?? 0;
                 const total    = dayPlan?.items.length ?? 0;
-
                 return (
                   <div key={date} style={{
-                    flex: 1, display: "flex", flexDirection: "column",
-                    alignItems: "center", gap: 5,
+                    flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
                     padding: "10px 4px", borderRadius: 12,
-                    border: `1.5px solid ${isToday ? "var(--accent)" : "var(--border)"}`,
+                    border: `1px solid ${isToday ? "var(--accent)" : "var(--border)"}`,
                     background: isToday ? "var(--accent-glow)" : "var(--bg-elevated)",
-                    boxShadow: isToday ? "0 0 0 2px var(--accent-glow)" : "none",
+                    boxShadow: "var(--shadow-card)",
                   }}>
-                    <span style={{ fontSize: 9, fontWeight: 600, color: isToday ? "var(--accent-text)" : "var(--text-muted)", letterSpacing: "0.04em" }}>
-                      {dayName}
-                    </span>
-                    <span style={{ fontSize: 13, fontWeight: isToday ? 800 : 500, color: isToday ? "var(--accent-text)" : "var(--text-primary)" }}>
-                      {dayNum}
-                    </span>
-                    <div style={{
-                      width: 8, height: 8, borderRadius: "50%",
-                      background: dotStyle.bg,
-                      boxShadow: dotStyle.shadow,
-                    }} />
-                    {total > 0 && (
-                      <span style={{ fontSize: 8, color: "var(--text-muted)" }}>{done}/{total}</span>
-                    )}
+                    <span style={{ fontSize: 9, fontWeight: 600, color: isToday ? "var(--accent-text)" : "var(--text-muted)", letterSpacing: "0.04em" }}>{dayName}</span>
+                    <span style={{ fontSize: 13, fontWeight: isToday ? 800 : 500, color: isToday ? "var(--accent-text)" : "var(--text-primary)" }}>{dayNum}</span>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotStyle.bg, boxShadow: dotStyle.shadow }} />
+                    {total > 0 && <span style={{ fontSize: 8, color: "var(--text-muted)" }}>{done}/{total}</span>}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Inbox — Gmail + Slack */}
+          {/* Google Calendar */}
           <div>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
-              Inbox
-            </p>
-            <div style={{
-              border: "1px solid var(--border)", borderRadius: 14,
-              overflow: "hidden", background: "var(--bg-elevated)",
-            }}>
-              {/* Gmail */}
-              <div style={{
-                padding: "16px 18px",
-                borderBottom: "1px solid var(--border)",
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: 9,
-                    background: "#fef2f2",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 14,
-                  }}>📧</div>
-                  <div>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Gmail</p>
-                    <p style={{ fontSize: 11, color: "var(--text-muted)" }}>Meeting signals</p>
-                  </div>
-                </div>
-                <button style={{
-                  padding: "5px 12px", borderRadius: 8, fontSize: 11, fontWeight: 600,
-                  cursor: "pointer", border: "1px solid var(--border)",
-                  background: "transparent", color: "var(--accent-text)",
-                  transition: "all 0.15s",
-                }}>Connect</button>
-              </div>
-
-              {/* Slack */}
-              <div style={{
-                padding: "16px 18px",
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: 9,
-                    background: "#f0fdf4",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 14,
-                  }}>💬</div>
-                  <div>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Slack</p>
-                    <p style={{ fontSize: 11, color: "var(--text-muted)" }}>Mentions & DMs</p>
-                  </div>
-                </div>
-                <button style={{
-                  padding: "5px 12px", borderRadius: 8, fontSize: 11, fontWeight: 600,
-                  cursor: "pointer", border: "1px solid var(--border)",
-                  background: "transparent", color: "var(--accent-text)",
-                  transition: "all 0.15s",
-                }}>Connect</button>
-              </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Calendar</p>
+              {gmailToken && !calNoScope && (
+                <button onClick={() => void refetchCal()} style={{ fontSize: 10, color: "var(--accent-text)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>↺</button>
+              )}
             </div>
 
-            <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, textAlign: "center", lineHeight: 1.5 }}>
-              Connect Gmail & Slack in Phase 4 to see meeting invites and mentions here
-            </p>
+            {!gmailToken ? (
+              <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>📅 Connect Gmail for calendar</span>
+                <a href="/settings" style={{ fontSize: 11, fontWeight: 600, color: "var(--accent-text)", textDecoration: "none" }}>Connect →</a>
+              </div>
+            ) : calNoScope ? (
+              <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", background: "var(--bg-elevated)" }}>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>Calendar access not granted.</p>
+                <a href="/settings" style={{ fontSize: 11, fontWeight: 600, color: "var(--accent-text)", textDecoration: "none" }}>Reconnect Gmail with calendar scope →</a>
+              </div>
+            ) : calLoading ? (
+              <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--bg-elevated)", display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", border: "2px solid var(--border)", borderTopColor: "var(--accent)", animation: "spin 0.8s linear infinite" }} />
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading calendar…</span>
+              </div>
+            ) : calEvents.length === 0 ? (
+              <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--bg-elevated)", textAlign: "center" }}>
+                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>No events in the next 7 days</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {calEvents.slice(0, 6).map((ev) => {
+                  const startDate = new Date(ev.start);
+                  const isToday2  = startDate.toDateString() === new Date().toDateString();
+                  const timeLabel = ev.isAllDay ? "All day" : startDate.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+                  const dayLabel  = isToday2 ? "Today" : startDate.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+                  const borderCol = ev.isNow ? "var(--hard)" : ev.isSoon ? "var(--medium)" : ev.meetingLinks.length > 0 ? "var(--accent)" : "var(--border)";
+                  const bgCol     = ev.isNow ? "var(--hard-bg)" : ev.isSoon ? "var(--medium-bg)" : ev.meetingLinks.length > 0 ? "var(--accent-glow)" : "var(--bg-elevated)";
+                  return (
+                    <div key={ev.id} style={{ border: `1px solid ${borderCol}`, borderRadius: 11, padding: "10px 13px", background: bgCol, boxShadow: "var(--shadow-card)" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 3 }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                          {ev.isNow && <span style={{ fontSize: 9, fontWeight: 700, color: "var(--hard)", background: "var(--hard-bg)", padding: "1px 5px", borderRadius: 4, marginRight: 6 }}>LIVE</span>}
+                          {ev.isSoon && <span style={{ fontSize: 9, fontWeight: 700, color: "var(--medium)", background: "var(--medium-bg)", padding: "1px 5px", borderRadius: 4, marginRight: 6 }}>SOON</span>}
+                          {ev.summary}
+                        </p>
+                        {ev.meetingLinks.length > 0 && (
+                          <button onClick={async () => { const { open } = await import("@tauri-apps/plugin-shell"); await open(ev.meetingLinks[0]); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "var(--accent)", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer", flexShrink: 0, boxShadow: "0 0 8px var(--accent-glow)" }}>
+                            Join
+                          </button>
+                        )}
+                      </div>
+                      <p style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                        {dayLabel} · {timeLabel}
+                        {ev.attendeeCount > 1 && ` · ${ev.attendeeCount} people`}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Quick stats */}
+          {/* Inbox */}
           <div>
-            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
-              At a Glance
-            </p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Inbox</p>
+              {gmailToken && (
+                <button onClick={() => void refetchGmail()} style={{ fontSize: 10, color: "var(--accent-text)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>↺</button>
+              )}
+            </div>
+
+            {!gmailToken ? (
+              <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>📧 Connect Gmail to see inbox</span>
+                <a href="/settings" style={{ fontSize: 11, fontWeight: 600, color: "var(--accent-text)", textDecoration: "none" }}>Connect →</a>
+              </div>
+            ) : gmailLoading ? (
+              <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--bg-elevated)", display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", border: "2px solid var(--border)", borderTopColor: "var(--accent)", animation: "spin 0.8s linear infinite" }} />
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading inbox…</span>
+              </div>
+            ) : gmailEmails.length === 0 ? (
+              <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--bg-elevated)", textAlign: "center" }}>
+                <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Inbox is clear</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {gmailEmails.slice(0, 8).map((email) => (
+                  <div key={email.id} style={{
+                    border: `1px solid ${email.meetingLinks.length > 0 ? "var(--accent)" : "var(--border)"}`,
+                    borderRadius: 11, padding: "10px 13px",
+                    background: email.meetingLinks.length > 0 ? "var(--accent-glow)" : "var(--bg-elevated)",
+                    boxShadow: "var(--shadow-card)",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 2 }}>
+                      {!email.isRead && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", flexShrink: 0, marginTop: 5 }} />}
+                      <p style={{ fontSize: 12, fontWeight: email.isRead ? 400 : 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                        {email.subject}
+                      </p>
+                    </div>
+                    <p style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: email.snippet ? 4 : 0, paddingLeft: !email.isRead ? 13 : 0 }}>
+                      {email.from} · {new Date(email.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                    {email.snippet && (
+                      <p style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4, paddingLeft: !email.isRead ? 13 : 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {email.snippet}
+                      </p>
+                    )}
+                    {email.meetingLinks.length > 0 && (
+                      <div style={{ display: "flex", gap: 6, marginTop: 6, paddingLeft: !email.isRead ? 13 : 0 }}>
+                        {email.meetingLinks.map((link, i) => (
+                          <button key={i} onClick={async () => { const { open } = await import("@tauri-apps/plugin-shell"); await open(link); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "var(--accent)", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 8px var(--accent-glow)" }}>
+                            🔗 Join
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* At a glance */}
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>At a Glance</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {([
-                {
-                  label: "DSA Progress",
-                  value: `${dsaSolved} / 1000`,
-                  sub: `${Math.round((dsaSolved / 1000) * 100)}% complete`,
-                  color: "var(--accent-text)",
-                  pct: dsaSolved / 10,
-                },
-                financeData ? {
-                  label: "Monthly Spend",
-                  value: `${financeData.currency}${Math.round(financeData.spent).toLocaleString()}`,
-                  sub: `of ${financeData.currency}${financeData.stipend.toLocaleString()} stipend`,
-                  color: financeData.spent > financeData.stipend ? "var(--hard)" : "var(--easy)",
-                  pct: financeData.stipend > 0 ? Math.min(100, (financeData.spent / financeData.stipend) * 100) : 0,
-                } : null,
-                {
-                  label: "Prompt Vault",
-                  value: `${promptCount} prompts`,
-                  sub: "saved offline",
-                  color: "var(--medium)",
-                  pct: null,
-                },
+                { label: "DSA Progress", value: `${dsaSolved} / 1000`, sub: `${Math.round((dsaSolved / 1000) * 100)}% complete`, color: "var(--accent-text)", pct: dsaSolved / 10 },
+                financeData ? { label: "Monthly Spend", value: `${financeData.currency}${Math.round(financeData.spent).toLocaleString()}`, sub: `of ${financeData.currency}${financeData.stipend.toLocaleString()} stipend`, color: financeData.spent > financeData.stipend ? "var(--hard)" : "var(--easy)", pct: financeData.stipend > 0 ? Math.min(100, (financeData.spent / financeData.stipend) * 100) : 0 } : null,
+                { label: "Prompt Vault", value: `${promptCount} prompts`, sub: "saved offline", color: "var(--medium)", pct: null },
               ] as Array<{ label: string; value: string; sub: string; color: string; pct: number | null }>)
-                .filter(Boolean)
-                .map((item) => (
-                <div key={item.label} style={{
-                  border: "1px solid var(--border)", borderRadius: 12,
-                  padding: "12px 16px", background: "var(--bg-elevated)",
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                .filter(Boolean).map((item) => (
+                <div key={item.label} style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "13px 16px", background: "var(--bg-elevated)", boxShadow: "var(--shadow-card)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: item.pct !== null ? 6 : 0 }}>
                     <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>{item.label}</span>
                     <span style={{ fontSize: 15, fontWeight: 800, color: item.color, letterSpacing: "-0.02em" }}>{item.value}</span>
                   </div>
                   {item.pct !== null && (
                     <div style={{ height: 3, background: "var(--border)", borderRadius: 99, marginBottom: 4, overflow: "hidden" }}>
-                      <div style={{
-                        height: "100%", width: `${item.pct}%`,
-                        background: item.color, borderRadius: 99,
-                        transition: "width 0.5s ease",
-                      }} />
+                      <div style={{ height: "100%", width: `${item.pct}%`, background: item.color, borderRadius: 99, transition: "width 0.5s ease" }} />
                     </div>
                   )}
                   <p style={{ fontSize: 10, color: "var(--text-muted)" }}>{item.sub}</p>
