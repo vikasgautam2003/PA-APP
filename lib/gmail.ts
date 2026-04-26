@@ -53,9 +53,15 @@ async function gmailFetch(endpoint: string, token: string): Promise<unknown> {
         method: "GET",
         headers: { Authorization: `Bearer ${newToken}` },
       });
+      if (!retry.ok) throw new Error(`Gmail API ${retry.status}`);
       return retry.json();
     }
     throw new Error("Gmail token expired. Please reconnect.");
+  }
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({})) as Record<string, unknown>;
+    const msg = (errBody.error as Record<string, unknown>)?.message ?? `Gmail API ${res.status}`;
+    throw new Error(msg as string);
   }
   return res.json();
 }
@@ -65,7 +71,7 @@ export async function fetchMeetingEmails(): Promise<GmailMessage[]> {
   if (!gmailToken) return [];
 
   try {
-    const query = encodeURIComponent("in:inbox -category:promotions -category:social newer_than:3d");
+    const query = encodeURIComponent("in:inbox newer_than:7d");
     const list  = await gmailFetch(`/users/me/messages?q=${query}&maxResults=20`, gmailToken) as { messages?: { id: string }[] };
     if (!list.messages?.length) return [];
 

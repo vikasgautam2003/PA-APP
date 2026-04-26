@@ -33,7 +33,7 @@ function getWeekDays() {
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const { currentPlan, markItemDone } = usePlanner();
-  const { emails: gmailEmails, loading: gmailLoading, refetch: refetchGmail } = useGmail();
+  const { emails: gmailEmails, loading: gmailLoading, error: gmailError, refetch: refetchGmail } = useGmail();
   const { events: calEvents, loading: calLoading, noScope: calNoScope, refetch: refetchCal } = useCalendar();
   const { gmailToken } = useSettingsStore();
   const [todayPlan, setTodayPlan] = useState<DayPlan | null>(null);
@@ -638,6 +638,10 @@ Write today's brief.`;
               <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--bg-elevated)", display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 10, height: 10, borderRadius: "50%", border: "2px solid var(--border)", borderTopColor: "var(--accent)", animation: "spin 0.8s linear infinite" }} />
                 <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading inbox…</span>
+              </div>
+            ) : gmailError ? (
+              <div style={{ border: "1px solid var(--hard)", borderRadius: 12, padding: "16px 18px", background: "var(--hard-bg)", textAlign: "center" }}>
+                <p style={{ fontSize: 12, color: "var(--hard)" }}>{gmailError}</p>
               </div>
             ) : gmailEmails.length === 0 ? (
               <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "16px 18px", background: "var(--bg-elevated)", textAlign: "center" }}>
