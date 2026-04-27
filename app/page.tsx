@@ -11,6 +11,8 @@ import { useCalendar } from "@/hooks/useCalendar";
 import { useSettingsStore } from "@/store/settingsStore";
 import TaskCheckbox from "@/components/planner/TaskCheckbox";
 import type { DayPlan, DayPlanItem } from "@/types";
+import type { CalendarEvent } from "@/lib/calendar";
+import type { GmailMessage } from "@/lib/gmail";
 
 const DIFF_COLOR: Record<string, string> = {
   Easy: "#16a34a", Medium: "#d97706", Hard: "#dc2626",
@@ -37,13 +39,20 @@ export default function DashboardPage() {
   const { events: calEvents, loading: calLoading, noScope: calNoScope, refetch: refetchCal } = useCalendar();
   const { gmailToken } = useSettingsStore();
   const [todayPlan, setTodayPlan] = useState<DayPlan | null>(null);
-  const [brief, setBrief]         = useState<string>("");
+  const [brief, setBrief]         = useState<string>(() => {
+    try { return localStorage.getItem("ares-brief-text") ?? ""; } catch { return ""; }
+  });
+  const [briefLastFetch, setBriefLastFetch] = useState<number>(() => {
+    try { return Number(localStorage.getItem("ares-brief-ts") ?? "0"); } catch { return 0; }
+  });
   const [briefLoading, setBriefLoading] = useState(false);
   const [streak, setStreak]       = useState(0);
   const [dsaSolved, setDsaSolved] = useState(0);
   const [financeData, setFinanceData] = useState<{ spent: number; stipend: number; currency: string } | null>(null);
   const [promptCount, setPromptCount] = useState(0);
   const [tickingId, setTickingId] = useState<string | null>(null);
+  const [selectedCalEvent, setSelectedCalEvent] = useState<CalendarEvent | null>(null);
+  const [selectedEmail, setSelectedEmail] = useState<GmailMessage | null>(null);
 
   const today     = new Date();
   const todayStr  = today.toISOString().split("T")[0];
@@ -160,6 +169,22 @@ export default function DashboardPage() {
     void fetchDashboard();
   }, [user, currentPlan, todayStr, todayMonth]);
 
+  const TWO_HOURS = 2 * 60 * 60 * 1000;
+
+  useEffect(() => {
+    if (!user) return;
+    const stale = briefLastFetch === 0 || Date.now() - briefLastFetch >= TWO_HOURS;
+    if (stale && !briefLoading) void generateBrief();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(() => { void generateBrief(); }, TWO_HOURS);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   async function generateBrief() {
     setBriefLoading(true);
     setBrief("");
@@ -199,6 +224,9 @@ Write today's brief.`;
         systemPrompt
       );
       setBrief(response);
+      const now = Date.now();
+      setBriefLastFetch(now);
+      try { localStorage.setItem("ares-brief-text", response); localStorage.setItem("ares-brief-ts", String(now)); } catch {}
     } catch (e) {
       setBrief(e instanceof Error ? e.message : "Couldn't generate brief. Check your Groq key in Settings.");
     } finally {
@@ -596,7 +624,7 @@ Write today's brief.`;
                   const borderCol = ev.isNow ? "var(--hard)" : ev.isSoon ? "var(--medium)" : ev.meetingLinks.length > 0 ? "var(--accent)" : "var(--border)";
                   const bgCol     = ev.isNow ? "var(--hard-bg)" : ev.isSoon ? "var(--medium-bg)" : ev.meetingLinks.length > 0 ? "var(--accent-glow)" : "var(--bg-elevated)";
                   return (
-                    <div key={ev.id} style={{ border: `1px solid ${borderCol}`, borderRadius: 11, padding: "10px 13px", background: bgCol, boxShadow: "var(--shadow-card)" }}>
+                    <div key={ev.id} onClick={() => setSelectedCalEvent(ev)} style={{ border: `1px solid ${borderCol}`, borderRadius: 11, padding: "10px 13px", background: bgCol, boxShadow: "var(--shadow-card)", cursor: "pointer" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 3 }}>
                         <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
                           {ev.isNow && <span style={{ fontSize: 9, fontWeight: 700, color: "var(--hard)", background: "var(--hard-bg)", padding: "1px 5px", borderRadius: 4, marginRight: 6 }}>LIVE</span>}
@@ -604,7 +632,7 @@ Write today's brief.`;
                           {ev.summary}
                         </p>
                         {ev.meetingLinks.length > 0 && (
-                          <button onClick={async () => { const { open } = await import("@tauri-apps/plugin-shell"); await open(ev.meetingLinks[0]); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "var(--accent)", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer", flexShrink: 0, boxShadow: "0 0 8px var(--accent-glow)" }}>
+                          <button onClick={async (e) => { e.stopPropagation(); const { open } = await import("@tauri-apps/plugin-shell"); await open(ev.meetingLinks[0]); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "var(--accent)", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer", flexShrink: 0, boxShadow: "0 0 8px var(--accent-glow)" }}>
                             Join
                           </button>
                         )}
@@ -650,11 +678,11 @@ Write today's brief.`;
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {gmailEmails.slice(0, 8).map((email) => (
-                  <div key={email.id} style={{
+                  <div key={email.id} onClick={() => setSelectedEmail(email)} style={{
                     border: `1px solid ${email.meetingLinks.length > 0 ? "var(--accent)" : "var(--border)"}`,
                     borderRadius: 11, padding: "10px 13px",
                     background: email.meetingLinks.length > 0 ? "var(--accent-glow)" : "var(--bg-elevated)",
-                    boxShadow: "var(--shadow-card)",
+                    boxShadow: "var(--shadow-card)", cursor: "pointer",
                   }}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 2 }}>
                       {!email.isRead && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", flexShrink: 0, marginTop: 5 }} />}
@@ -673,7 +701,7 @@ Write today's brief.`;
                     {email.meetingLinks.length > 0 && (
                       <div style={{ display: "flex", gap: 6, marginTop: 6, paddingLeft: !email.isRead ? 13 : 0 }}>
                         {email.meetingLinks.map((link, i) => (
-                          <button key={i} onClick={async () => { const { open } = await import("@tauri-apps/plugin-shell"); await open(link); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "var(--accent)", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 8px var(--accent-glow)" }}>
+                          <button key={i} onClick={async (e) => { e.stopPropagation(); const { open } = await import("@tauri-apps/plugin-shell"); await open(link); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "var(--accent)", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 8px var(--accent-glow)" }}>
                             🔗 Join
                           </button>
                         ))}
@@ -712,6 +740,110 @@ Write today's brief.`;
           </div>
         </div>
       </div>
+
+      {/* Calendar event detail modal */}
+      {selectedCalEvent && (
+        <div onClick={() => setSelectedCalEvent(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 16, padding: "24px 26px", width: "100%", maxWidth: 480, maxHeight: "80vh", overflowY: "auto", boxShadow: "0 8px 40px rgba(0,0,0,0.5)" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+              <div style={{ flex: 1 }}>
+                {selectedCalEvent.isNow && <span style={{ fontSize: 9, fontWeight: 700, color: "var(--hard)", background: "var(--hard-bg)", padding: "2px 6px", borderRadius: 4, marginRight: 6 }}>LIVE</span>}
+                {selectedCalEvent.isSoon && <span style={{ fontSize: 9, fontWeight: 700, color: "var(--medium)", background: "var(--medium-bg)", padding: "2px 6px", borderRadius: 4, marginRight: 6 }}>SOON</span>}
+                <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginTop: 4, lineHeight: 1.3 }}>{selectedCalEvent.summary}</p>
+              </div>
+              <button onClick={() => setSelectedCalEvent(null)} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 18, cursor: "pointer", lineHeight: 1, flexShrink: 0 }}>×</button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", width: 72, flexShrink: 0 }}>WHEN</span>
+                <span style={{ fontSize: 12, color: "var(--text-primary)" }}>
+                  {selectedCalEvent.isAllDay
+                    ? new Date(selectedCalEvent.start + "T00:00:00").toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }) + " · All day"
+                    : (() => {
+                        const s = new Date(selectedCalEvent.start);
+                        const e = new Date(selectedCalEvent.end);
+                        return `${s.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })} · ${s.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })} – ${e.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`;
+                      })()
+                  }
+                </span>
+              </div>
+              {selectedCalEvent.attendeeCount > 0 && (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", width: 72, flexShrink: 0 }}>PEOPLE</span>
+                  <span style={{ fontSize: 12, color: "var(--text-primary)" }}>{selectedCalEvent.attendeeCount} attendee{selectedCalEvent.attendeeCount > 1 ? "s" : ""}</span>
+                </div>
+              )}
+              {selectedCalEvent.location && (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", width: 72, flexShrink: 0 }}>LOCATION</span>
+                  <span style={{ fontSize: 12, color: "var(--text-primary)", wordBreak: "break-word" }}>{selectedCalEvent.location}</span>
+                </div>
+              )}
+              {selectedCalEvent.description && (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", width: 72, flexShrink: 0 }}>NOTES</span>
+                  <span style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6, wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
+                    {selectedCalEvent.description.replace(/<[^>]+>/g, "").trim()}
+                  </span>
+                </div>
+              )}
+            </div>
+            {selectedCalEvent.meetingLinks.length > 0 && (() => {
+              const deduped = [...new Set(selectedCalEvent.meetingLinks.map((l) => {
+                try { const u = new URL(l); return u.origin + u.pathname; } catch { return l; }
+              }))];
+              return (
+                <div style={{ marginTop: 20, display: "flex", gap: 8 }}>
+                  {deduped.map((link, i) => (
+                    <button key={i} onClick={async () => { const { open } = await import("@tauri-apps/plugin-shell"); await open(link); }} style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "var(--accent)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 12px var(--accent-glow)" }}>
+                      Join Meeting
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Email detail modal */}
+      {selectedEmail && (
+        <div onClick={() => setSelectedEmail(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 16, padding: "24px 26px", width: "100%", maxWidth: 520, maxHeight: "80vh", overflowY: "auto", boxShadow: "0 8px 40px rgba(0,0,0,0.5)" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+              <div style={{ flex: 1 }}>
+                {!selectedEmail.isRead && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", marginRight: 8, verticalAlign: "middle" }} />}
+                <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", display: "inline", lineHeight: 1.3 }}>{selectedEmail.subject}</p>
+              </div>
+              <button onClick={() => setSelectedEmail(null)} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 18, cursor: "pointer", lineHeight: 1, flexShrink: 0 }}>×</button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", width: 48, flexShrink: 0 }}>FROM</span>
+                <span style={{ fontSize: 12, color: "var(--text-primary)", wordBreak: "break-word" }}>{selectedEmail.from}</span>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", width: 48, flexShrink: 0 }}>DATE</span>
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{new Date(selectedEmail.date).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</span>
+              </div>
+            </div>
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+              <p style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                {(selectedEmail.body || selectedEmail.snippet || "No preview available.").replace(/<[^>]+>/g, "").trim()}
+              </p>
+            </div>
+            {selectedEmail.meetingLinks.length > 0 && (
+              <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+                {selectedEmail.meetingLinks.map((link, i) => (
+                  <button key={i} onClick={async () => { const { open } = await import("@tauri-apps/plugin-shell"); await open(link); }} style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "var(--accent)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 12px var(--accent-glow)" }}>
+                    🔗 Join Meeting
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes spin {

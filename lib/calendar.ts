@@ -12,6 +12,7 @@ export interface CalendarEvent {
   isAllDay:     boolean;
   meetingLinks: string[];
   location:     string;
+  description:  string;
   attendeeCount: number;
   isNow:        boolean;
   isSoon:       boolean;
@@ -53,11 +54,22 @@ export async function fetchCalendarEvents(): Promise<CalendarEvent[]> {
     const location  = (i.location    as string) ?? "";
     const hangout   = (i.hangoutLink as string) ?? "";
 
+    const confData  = i.conferenceData as { entryPoints?: { entryPointType?: string; uri?: string }[] } | undefined;
+    const confLinks = (confData?.entryPoints ?? [])
+      .filter((ep) => ep.entryPointType === "video")
+      .map((ep) => ep.uri ?? "")
+      .filter(Boolean);
+
     const allText   = `${desc} ${location} ${hangout}`;
-    const links     = [...new Set([
+    const rawLinks  = [
       ...(allText.match(MEET_REGEX) ?? []),
       ...(hangout ? [hangout] : []),
-    ])];
+      ...confLinks,
+    ];
+    // Normalize to base URL (strip query params) before deduplication
+    const links = [...new Set(
+      rawLinks.map((l) => { try { const u = new URL(l); return u.origin + u.pathname; } catch { return l; } })
+    )];
 
     const startDate = new Date(startStr);
     const endDate   = new Date(endStr);
@@ -71,6 +83,7 @@ export async function fetchCalendarEvents(): Promise<CalendarEvent[]> {
       isAllDay,
       meetingLinks:  links,
       location:      location.slice(0, 80),
+      description:   desc.slice(0, 600),
       attendeeCount: (i.attendees as unknown[])?.length ?? 0,
       isNow:  !isAllDay && now >= startDate && now < endDate,
       isSoon: !isAllDay && msUntil > 0 && msUntil < 30 * 60 * 1000,

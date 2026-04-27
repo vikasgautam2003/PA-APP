@@ -13,6 +13,7 @@ export interface GmailMessage {
   from: string;
   date: string;
   snippet: string;
+  body: string;
   meetingLinks: string[];
   isRead: boolean;
 }
@@ -97,16 +98,25 @@ export async function fetchMeetingEmails(): Promise<GmailMessage[]> {
         const isMeetingEmail = MEETING_KEYWORDS.some((kw) => text.includes(kw));
 
         const meetingLinks: string[] = [];
-        function extractLinks(part: unknown) {
-          const p = part as { body?: { data?: string }; parts?: unknown[] };
+        let bodyText = "";
+        function extractParts(part: unknown) {
+          const p = part as { mimeType?: string; body?: { data?: string }; parts?: unknown[] };
           if (p.body?.data) {
             const decoded = atob(p.body.data.replace(/-/g, "+").replace(/_/g, "/"));
             const found   = decoded.match(MEETING_LINK_REGEX) ?? [];
             meetingLinks.push(...found.map((l) => l.replace(/['"]/g, "")));
+            if (p.mimeType === "text/plain" && !bodyText) {
+              bodyText = decoded;
+            }
           }
-          if (p.parts) p.parts.forEach(extractLinks);
+          if (p.parts) p.parts.forEach(extractParts);
         }
-        extractLinks(detail.payload);
+        extractParts(detail.payload);
+
+        if (!bodyText && detail.payload?.body?.data) {
+          const decoded = atob(detail.payload.body.data.replace(/-/g, "+").replace(/_/g, "/"));
+          bodyText = decoded.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        }
 
         const snippetLinks = snippet.match(MEETING_LINK_REGEX) ?? [];
         meetingLinks.push(...snippetLinks);
@@ -119,6 +129,7 @@ export async function fetchMeetingEmails(): Promise<GmailMessage[]> {
           from: from.replace(/<.*>/, "").trim(),
           date,
           snippet: snippet.slice(0, 120),
+          body: bodyText.slice(0, 800),
           meetingLinks: [...new Set(meetingLinks)],
           isRead,
         });
