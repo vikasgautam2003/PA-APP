@@ -5,7 +5,7 @@ import { getDb } from "@/lib/db";
 import { askGroq } from "@/lib/groq";
 import type {
   PlannerTopicWithSubtopics, PlannerSubtopic,
-  WeekPlan, DayPlan, DayPlanItem, DifficultyRamp, QuickSession,
+  WeekPlan, DayPlan, DayPlanItem, DifficultyRamp, QuickSession, QuickSessionDSA,
 } from "@/types";
 
 function getWeekStart(): string {
@@ -120,7 +120,7 @@ export function usePlanner() {
       const db = await getDb();
       const weekStart = getWeekStart();
 
-      // Get DSA context
+      // Solved count → difficulty ramp
       const solvedRows = await db.select<{ count: number }[]>(
         "SELECT COUNT(*) as count FROM dsa_progress WHERE user_id = ? AND status = 'done'",
         [user!.id]
@@ -128,109 +128,101 @@ export function usePlanner() {
       const solved = solvedRows[0]?.count ?? 0;
       const ramp = getDifficultyRamp(solved);
 
-      const topicProgress = await db.select<any[]>(`
-        SELECT q.topic,
-          COUNT(*) as total,
-          SUM(CASE WHEN COALESCE(p.status,'todo')='done' THEN 1 ELSE 0 END) as done
-        FROM dsa_questions q
-        LEFT JOIN dsa_progress p ON p.question_id = q.id AND p.user_id = ?
-        GROUP BY q.topic
-      `, [user!.id]);
+      // Need 12 DSA questions total: 2 per day × 6 work days (Mon–Sat)
+      const TOTAL_DSA   = 12;
+      const easyTarget  = Math.round(TOTAL_DSA * ramp.easy);
+      const mediumTarget = Math.round(TOTAL_DSA * ramp.medium);
+      const hardTarget  = Math.max(0, TOTAL_DSA - easyTarget - mediumTarget);
 
-      const weakTopics = topicProgress
-        .filter((t) => t.total > 0 && (t.done / t.total) < 0.2)
-        .map((t) => t.topic).slice(0, 5);
+      const [easyQ, mediumQ, hardQ] = await Promise.all([
+        db.select<any[]>(
+          `SELECT q.id, q.title, q.topic, q.difficulty
+           FROM dsa_questions q
+           LEFT JOIN dsa_progress p ON p.question_id = q.id AND p.user_id = ?
+           WHERE COALESCE(p.status,'todo') = 'todo' AND q.difficulty = 'Easy'
+           ORDER BY RANDOM() LIMIT ?`,
+          [user!.id, easyTarget + 4]
+        ),
+        db.select<any[]>(
+          `SELECT q.id, q.title, q.topic, q.difficulty
+           FROM dsa_questions q
+           LEFT JOIN dsa_progress p ON p.question_id = q.id AND p.user_id = ?
+           WHERE COALESCE(p.status,'todo') = 'todo' AND q.difficulty = 'Medium'
+           ORDER BY RANDOM() LIMIT ?`,
+          [user!.id, mediumTarget + 2]
+        ),
+        hardTarget > 0
+          ? db.select<any[]>(
+              `SELECT q.id, q.title, q.topic, q.difficulty
+               FROM dsa_questions q
+               LEFT JOIN dsa_progress p ON p.question_id = q.id AND p.user_id = ?
+               WHERE COALESCE(p.status,'todo') = 'todo' AND q.difficulty = 'Hard'
+               ORDER BY RANDOM() LIMIT ?`,
+              [user!.id, hardTarget]
+            )
+          : Promise.resolve([]),
+      ]);
 
-      // Pre-select DSA candidates using difficulty ramp
-      const candidates = await db.select<any[]>(`
-        SELECT q.id, q.title, q.topic, q.difficulty
-        FROM dsa_questions q
-        LEFT JOIN dsa_progress p ON p.question_id = q.id AND p.user_id = ?
-        WHERE COALESCE(p.status, 'todo') = 'todo'
-        ORDER BY q.id ASC
-        LIMIT 30
-      `, [user!.id]);
+      let dsaPool: any[] = [
+        ...easyQ.slice(0, easyTarget),
+        ...mediumQ.slice(0, mediumTarget),
+        ...hardQ.slice(0, hardTarget),
+      ];
 
-      const easyPool   = candidates.filter((q) => q.difficulty === "Easy");
-      const mediumPool = candidates.filter((q) => q.difficulty === "Medium");
-      const hardPool   = candidates.filter((q) => q.difficulty === "Hard");
+      // Fill gaps if any difficulty bucket was short
+      if (dsaPool.length < TOTAL_DSA) {
+        const usedIds = dsaPool.map((q) => q.id);
+        const inClause = usedIds.length > 0
+          ? `AND q.id NOT IN (${usedIds.map(() => "?").join(",")})`
+          : "";
+        const extra = await db.select<any[]>(
+          `SELECT q.id, q.title, q.topic, q.difficulty
+           FROM dsa_questions q
+           LEFT JOIN dsa_progress p ON p.question_id = q.id AND p.user_id = ?
+           WHERE COALESCE(p.status,'todo') = 'todo' ${inClause}
+           ORDER BY q.difficulty ASC, RANDOM() LIMIT ?`,
+          [user!.id, ...usedIds, TOTAL_DSA - dsaPool.length]
+        );
+        dsaPool = [...dsaPool, ...extra];
+      }
 
-      const dsaCandidates = [
-        ...easyPool.slice(0, Math.round(6 * ramp.easy)),
-        ...mediumPool.slice(0, Math.round(6 * ramp.medium)),
-        ...hardPool.slice(0, Math.round(6 * ramp.hard)),
-      ].slice(0, 6);
+      // Pending subtopics in queue order — 1 per work day
+      const pendingSubs = store.topics.flatMap((t) =>
+        t.subtopics.filter((s) => !s.is_done).map((s) => ({ ...s, topicTitle: t.title }))
+      );
 
-      // Build topic queue summary
-      const topicQueueSummary = store.topics.map((t, i) => {
-        const pendingSubs = t.subtopics.filter((s) => !s.is_done);
-        return `${i + 1}. ${t.title}\n${pendingSubs.map((s, j) => `   ${j + 1}. ${s.label}`).join("\n")}`;
-      }).join("\n\n");
+      // Build Mon–Sun
+      const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      const startDate = new Date(weekStart + "T00:00:00");
 
-      const prompt = `You are a study planner for a developer who works 9 hours daily and has ~1.5 hours for studying.
+      const days: DayPlan[] = DAY_NAMES.map((dayName, i) => {
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + i);
+        const dateStr = d.toISOString().split("T")[0];
 
-TOPIC QUEUE (in priority order — assign in this order):
-${topicQueueSummary || "No custom topics added yet."}
+        // Sunday = rest
+        if (i === 6) return { date: dateStr, day: dayName, items: [], status: "rest" as const };
 
-DSA CONTEXT:
-- Solved: ${solved}/1000
-- Weak topics (prioritize): ${weakTopics.join(", ") || "None yet"}
-- DSA candidates for this week (pre-selected, pick 2-3 total across the week):
-${dsaCandidates.map((q) => `  [DSA-${q.id}] ${q.title} (${q.topic}, ${q.difficulty})`).join("\n")}
+        const items: DayPlanItem[] = [];
 
-DIFFICULTY RULE: Max 1 Hard question per day. Mix Easy+Medium primarily.
+        // 2 DSA questions
+        const q1 = dsaPool[i * 2];
+        const q2 = dsaPool[i * 2 + 1];
+        if (q1) items.push({ type: "dsa", id: q1.id, label: q1.title, difficulty: q1.difficulty, topic: q1.topic, is_done: false, done_at: null });
+        if (q2) items.push({ type: "dsa", id: q2.id, label: q2.title, difficulty: q2.difficulty, topic: q2.topic, is_done: false, done_at: null });
 
-DAYS: Monday to Saturday. Sunday is rest. Max 2-3 items per day.
+        // 1 topic subtask
+        const sub = pendingSubs[i];
+        if (sub) items.push({ type: "subtopic", id: sub.id, label: sub.label, topic: sub.topicTitle, is_done: sub.is_done, done_at: sub.done_at });
 
-Return ONLY valid JSON in this exact format:
-{
-  "week_start": "${weekStart}",
-  "days": [
-    {
-      "date": "YYYY-MM-DD",
-      "day": "Mon",
-      "items": [
-        {"type": "subtopic", "id": <subtopic_id>, "label": "<label>", "topic": "<main topic>"},
-        {"type": "dsa", "id": <question_id>, "label": "<title>", "difficulty": "<Easy/Medium/Hard>", "topic": "<topic>"}
-      ]
-    }
-  ]
-}
+        return { date: dateStr, day: dayName, items, status: computeDayStatus(items) };
+      });
 
-Use actual subtopic IDs from the queue. Assign subtopics in order — do not skip ahead.`;
-
-      const raw = await askGroq(prompt);
-      const clean = raw.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-
-      // Merge with done status
-      const allSubtopics = store.topics.flatMap((t) => t.subtopics);
       const plan: WeekPlan = {
         week_start: weekStart,
         generated_at: new Date().toISOString(),
-        days: parsed.days.map((d: any) => ({
-          date: d.date,
-          day: d.day,
-          items: d.items.map((item: any) => {
-            if (item.type === "subtopic") {
-              const sub = allSubtopics.find((s) => s.id === item.id);
-              return {
-                ...item,
-                is_done: sub?.is_done ?? false,
-                done_at: sub?.done_at ?? null,
-              };
-            }
-            return { ...item, is_done: false, done_at: null };
-          }),
-          status: "pending",
-        })),
+        days,
       };
-
-      // Compute statuses
-      plan.days = plan.days.map((d) => ({
-        ...d,
-        status: computeDayStatus(d.items),
-      }));
 
       await db.execute(
         `INSERT INTO planner_week_plans (user_id, week_start, plan_json)
@@ -383,86 +375,97 @@ Return ONLY valid JSON in this exact format:
     }
   }
 
-  async function getQuickSession(topic: string): Promise<void> {
+  async function getQuickSession(rawInput: string): Promise<void> {
     store.setSessionLoading(true);
     try {
       const db = await getDb();
 
-      // Pending subtopics from topic queue (up to 15)
-      const pendingTasks = store.topics.flatMap((t) =>
-        t.subtopics
-          .filter((s) => !s.is_done)
-          .map((s) => ({ label: s.label, topic: t.title }))
-      ).slice(0, 15);
+      // Parse topic and optional difficulty from the input
+      const DIFF_WORDS: Record<string, string> = {
+        easy: "Easy", medium: "Medium", hard: "Hard",
+        e: "Easy", m: "Medium", h: "Hard",
+      };
+      const tokens = rawInput.trim().toLowerCase().split(/[\s·\-,]+/);
+      let difficulty = "";
+      const topicTokens: string[] = [];
+      for (const t of tokens) {
+        if (DIFF_WORDS[t]) difficulty = DIFF_WORDS[t];
+        else if (t) topicTokens.push(t);
+      }
+      const topic = topicTokens.join(" ");
 
-      // Easy DSA questions not yet solved
-      const easyPool = await db.select<any[]>(`
-        SELECT q.id, q.title as label, q.topic, q.difficulty
-        FROM dsa_questions q
-        LEFT JOIN dsa_progress p ON p.question_id = q.id AND p.user_id = ?
-        WHERE COALESCE(p.status, 'todo') = 'todo' AND q.difficulty = 'Easy'
-        ORDER BY RANDOM() LIMIT 10
-      `, [user!.id]);
+      // Check whether the topic actually exists in the DSA tracker
+      const existsRows = topic
+        ? await db.select<{ count: number }[]>(
+            "SELECT COUNT(*) as count FROM dsa_questions WHERE LOWER(topic) LIKE ?",
+            [`%${topic}%`]
+          )
+        : [{ count: 0 }];
+      const topicInTracker = (existsRows[0]?.count ?? 0) > 0;
 
-      // Topic-specific questions (any difficulty)
-      const topicPool = topic ? await db.select<any[]>(`
-        SELECT q.id, q.title as label, q.topic, q.difficulty
-        FROM dsa_questions q
-        LEFT JOIN dsa_progress p ON p.question_id = q.id AND p.user_id = ?
-        WHERE COALESCE(p.status, 'todo') = 'todo'
-          AND (LOWER(q.topic) LIKE ? OR LOWER(q.title) LIKE ?)
-        ORDER BY q.difficulty ASC LIMIT 10
-      `, [user!.id, `%${topic.toLowerCase()}%`, `%${topic.toLowerCase()}%`]) : [];
+      let dsaTasks: QuickSessionDSA[] = [];
+      let aiGenerated = false;
 
-      const prompt = `You are a focused study session advisor for a developer learning DSA and CS topics.
+      if (topicInTracker && topic) {
+        // Pull up to 2 unsolved questions from the tracker
+        const rows = await db.select<any[]>(
+          `SELECT q.id, q.title, q.topic, q.difficulty
+           FROM dsa_questions q
+           LEFT JOIN dsa_progress p ON p.question_id = q.id AND p.user_id = ?
+           WHERE COALESCE(p.status, 'todo') = 'todo'
+             AND LOWER(q.topic) LIKE ?
+             ${difficulty ? "AND q.difficulty = ?" : ""}
+           ORDER BY RANDOM() LIMIT 2`,
+          difficulty
+            ? [user!.id, `%${topic}%`, difficulty]
+            : [user!.id, `%${topic}%`]
+        );
+        dsaTasks = rows.map((q) => ({ id: q.id, label: q.title, topic: q.topic, difficulty: q.difficulty }));
+      }
 
-USER'S PENDING TOPIC QUEUE:
-${pendingTasks.length > 0
-  ? pendingTasks.map((t, i) => `${i + 1}. [${t.topic}] ${t.label}`).join("\n")
-  : "No custom topics added yet — generate generic study tasks."}
+      // Fill any gap (topic not in tracker, or not enough questions) with AI
+      if (dsaTasks.length < 2) {
+        aiGenerated = true;
+        const needed = 2 - dsaTasks.length;
+        const already = dsaTasks.map((t) => t.label).join(", ");
+        const raw = await askGroq(
+          `You are an expert DSA trainer. Generate ${needed} well-known coding interview question(s) for a beginner practising "${topic || "general DSA"}" at "${difficulty || "Medium"}" difficulty.
+${already ? `Already assigned: ${already}. Choose different ones.` : ""}
+Pick popular, classic problems (LeetCode/interview style). Phrase them as a trainer giving exercises to a student.
+Return ONLY valid JSON: {"questions":[{"label":"...","topic":"...","difficulty":"..."}]}`
+        );
+        const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim()) as { questions: { label: string; topic: string; difficulty: string }[] };
+        const aiQ = parsed.questions.slice(0, needed).map((q, i) => ({
+          id: -(i + 1),
+          label: q.label,
+          topic: q.topic || topic || "General",
+          difficulty: q.difficulty || difficulty || "Medium",
+        }));
+        dsaTasks = [...dsaTasks, ...aiQ];
+      }
 
-AVAILABLE EASY DSA QUESTIONS (use actual IDs):
-${easyPool.map((q) => `[ID:${q.id}] ${q.label} (${q.topic}, ${q.difficulty})`).join("\n") || "None available."}
+      // Get 1 pending topic task from the planner queue
+      const pending = store.topics
+        .flatMap((t) => t.subtopics.filter((s) => !s.is_done).map((s) => ({ label: s.label, topic: t.title })));
+      const topicTask = pending[0] ?? { label: "Review your notes and plan for tomorrow", topic: "General" };
 
-${topicPool.length > 0 ? `TOPIC-SPECIFIC QUESTIONS FOR "${topic}":
-${topicPool.map((q) => `[ID:${q.id}] ${q.label} (${q.topic}, ${q.difficulty})`).join("\n")}` : ""}
-
-FOCUS: ${topic || "General — pick the most urgent pending items"}
-
-Return ONLY valid JSON (no markdown):
-{
-  "tasks": [
-    {"label": "...", "topic": "..."},
-    {"label": "...", "topic": "..."},
-    {"label": "...", "topic": "..."}
-  ],
-  "easy_questions": [
-    {"id": <number>, "label": "...", "topic": "...", "difficulty": "Easy"},
-    {"id": <number>, "label": "...", "topic": "...", "difficulty": "Easy"}
-  ],
-  "topic_question": {"id": <number>, "label": "...", "topic": "...", "difficulty": "Medium"}
-}
-
-Rules:
-- tasks: exactly 3, taken from the TOPIC QUEUE above (use the exact label and topic)
-- easy_questions: exactly 2 Easy DSA from the EASY list (use real IDs)
-- topic_question: 1 question matching "${topic || "the user's weakest area"}", any difficulty (use real ID)`;
-
-      const raw   = await askGroq(prompt);
-      const clean = raw.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean) as Omit<QuickSession, "topic">;
-
-      store.setQuickSession({ topic, ...parsed });
+      store.setQuickSession({
+        topic: rawInput,
+        difficulty: difficulty || "Mixed",
+        dsa_tasks: dsaTasks.slice(0, 2),
+        topic_task: topicTask,
+        ai_generated: aiGenerated,
+      });
     } catch {
       store.setQuickSession({
-        topic,
-        tasks: [
-          { label: "Review pending subtopics from your queue", topic: "General" },
-          { label: "Revisit notes from last session", topic: "General" },
-          { label: "Read one chapter or watch one lecture segment", topic: "General" },
+        topic: rawInput,
+        difficulty: "",
+        dsa_tasks: [
+          { id: 0, label: "Could not load questions — try again", topic: "", difficulty: "" },
+          { id: 0, label: "Check your DSA tracker has data seeded", topic: "", difficulty: "" },
         ],
-        easy_questions: [],
-        topic_question: { id: 0, label: "Add topics and DSA questions to unlock this", topic: "", difficulty: "" },
+        topic_task: { label: "Review pending tasks from your queue", topic: "General" },
+        ai_generated: false,
       });
     } finally {
       store.setSessionLoading(false);

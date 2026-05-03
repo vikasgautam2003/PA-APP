@@ -59,9 +59,10 @@ export interface QuickSessionDSA {
 
 export interface QuickSession {
   topic: string;
-  tasks: QuickSessionTask[];
-  easy_questions: QuickSessionDSA[];
-  topic_question: QuickSessionDSA;
+  difficulty: string;
+  dsa_tasks: QuickSessionDSA[];   // exactly 2 — from tracker or AI-generated
+  topic_task: QuickSessionTask;   // 1 — from planner topics queue
+  ai_generated: boolean;          // true when topic wasn't in the DSA tracker
 }
 
 export interface QuestionNote {

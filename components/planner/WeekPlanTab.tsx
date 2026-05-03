@@ -27,6 +27,9 @@ const STATUS_STYLES: Record<string, { border: string; bg: string; headerBg: stri
 const DIFF_COLOR: Record<string, string> = {
   Easy: "var(--easy)", Medium: "var(--medium)", Hard: "var(--hard)",
 };
+const DIFF_BG: Record<string, string> = {
+  Easy: "var(--easy-bg)", Medium: "var(--medium-bg)", Hard: "var(--hard-bg)",
+};
 
 export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, onImprovise, onMarkDone, quickSession, isSessionLoading, onQuickSession }: Props) {
 
@@ -148,30 +151,30 @@ export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, 
           </div>
         )}
 
-        {/* ── AI QUICK SESSION ── */}
-        <div style={{
-          borderRadius: 16, overflow: "hidden",
-          border: "1px solid var(--border)", background: "var(--bg-elevated)",
-        }}>
-          {/* Header + input row */}
+        {/* ── DSA TRAINER ── */}
+        <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
+
+          {/* Header + input */}
           <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ fontSize: 18, lineHeight: 1 }}>✦</div>
-            <div style={{ flex: 1 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--accent-glow)", border: "1px solid var(--accent-glow)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+              🎯
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
-                AI Quick Session
+                DSA Trainer
               </p>
               <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>
-                Get 3 tasks · 2 easy questions · 1 topic challenge
+                2 exercises from your tracker · 1 topic from your queue
               </p>
             </div>
             <input
               value={sessionTopic}
               onChange={(e) => setSessionTopic(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleQuickSession()}
-              placeholder="Topic (e.g. Arrays, DP, Graphs…)"
+              placeholder="e.g. Arrays easy · DP medium · Graphs"
               style={{
-                width: 220, padding: "9px 14px", borderRadius: 9,
-                border: "1px solid var(--border)", fontSize: 13,
+                width: 240, padding: "9px 14px", borderRadius: 9,
+                border: "1px solid var(--border)", fontSize: 12,
                 color: "var(--text-primary)", background: "var(--bg-surface)", outline: "none",
               }}
               onFocus={(e) => { e.target.style.borderColor = "var(--accent)"; e.target.style.boxShadow = "0 0 0 3px var(--accent-glow)"; }}
@@ -192,9 +195,9 @@ export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, 
               {isSessionLoading ? (
                 <>
                   <div style={{ width: 13, height: 13, borderRadius: "50%", border: "2px solid #fff4", borderTopColor: "#fff", animation: "spin 0.8s linear infinite" }} />
-                  Thinking…
+                  Loading…
                 </>
-              ) : "Ask AI"}
+              ) : "Get Tasks"}
             </button>
           </div>
 
@@ -202,86 +205,139 @@ export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, 
           {quickSession && !isSessionLoading && (
             <>
               <div style={{ height: 1, background: "var(--border)" }} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0 }}>
 
-                {/* Tasks column */}
-                <div style={{ padding: "16px 20px", borderRight: "1px solid var(--border)" }}>
-                  <p style={{ margin: "0 0 12px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--accent)" }}>
-                    3 Tasks
-                  </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {quickSession.tasks.map((t, i) => (
-                      <div key={i} style={{
-                        padding: "10px 12px", borderRadius: 10,
-                        background: "var(--bg-surface)", border: "1px solid var(--border)",
-                      }}>
-                        <p style={{ margin: "0 0 3px", fontSize: 12, fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.4 }}>{t.label}</p>
-                        <span style={{ fontSize: 10, color: "var(--text-faint)", background: "var(--bg-elevated)", padding: "1px 6px", borderRadius: 99, border: "1px solid var(--border)" }}>
-                          {t.topic}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+              {/* AI-generated notice */}
+              {quickSession.ai_generated && (
+                <div style={{ padding: "8px 20px", background: "var(--medium-bg)", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid var(--border)" }}>
+                  <span style={{ fontSize: 11 }}>✦</span>
+                  <span style={{ fontSize: 11, color: "var(--medium)" }}>
+                    Topic not found in your tracker — AI recommended these exercises instead
+                  </span>
                 </div>
+              )}
 
-                {/* Easy questions column */}
-                <div style={{ padding: "16px 20px", borderRight: "1px solid var(--border)" }}>
-                  <p style={{ margin: "0 0 12px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--easy)" }}>
-                    2 Easy Questions
-                  </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {quickSession.easy_questions.map((q, i) => (
-                      <div key={i} style={{
-                        padding: "10px 12px", borderRadius: 10,
-                        background: "var(--easy-bg)", border: "1px solid var(--easy)40",
-                      }}>
-                        <p style={{ margin: "0 0 5px", fontSize: 12, fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.4 }}>{q.label}</p>
-                        <div style={{ display: "flex", gap: 5 }}>
-                          <span style={{ fontSize: 9, fontWeight: 700, color: "var(--easy)", background: "var(--easy)20", padding: "1px 6px", borderRadius: 99 }}>Easy</span>
-                          <span style={{ fontSize: 9, color: "var(--text-faint)", background: "var(--bg-elevated)", padding: "1px 6px", borderRadius: 99, border: "1px solid var(--border)" }}>{q.topic}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
 
-                {/* Topic challenge column */}
-                <div style={{ padding: "16px 20px" }}>
-                  <p style={{ margin: "0 0 12px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--medium)" }}>
-                    1 Topic Challenge
-                  </p>
-                  {quickSession.topic_question && quickSession.topic_question.label && (
-                    <div style={{
-                      padding: "12px 14px", borderRadius: 10,
-                      background: "var(--medium-bg)", border: "1px solid var(--medium)40",
+                {/* Section label */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                    Today&apos;s Practice Set
+                  </span>
+                  {quickSession.difficulty && quickSession.difficulty !== "Mixed" && (
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, padding: "1px 8px", borderRadius: 99,
+                      color: DIFF_COLOR[quickSession.difficulty] ?? "var(--text-muted)",
+                      background: DIFF_BG[quickSession.difficulty] ?? "var(--border)",
+                      border: `1px solid ${DIFF_COLOR[quickSession.difficulty] ?? "var(--border)"}`,
                     }}>
-                      <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.4 }}>
-                        {quickSession.topic_question.label}
+                      {quickSession.difficulty}
+                    </span>
+                  )}
+                </div>
+
+                {/* DSA Exercise 1 */}
+                {quickSession.dsa_tasks[0] && (
+                  <div style={{
+                    padding: "14px 16px", borderRadius: 12,
+                    background: "var(--bg-surface)", border: "1px solid var(--border)",
+                    display: "flex", gap: 14, alignItems: "flex-start",
+                  }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: "var(--accent-glow)", border: "1px solid var(--accent-glow)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "var(--accent)" }}>1</span>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: "0 0 6px", fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--accent)" }}>
+                        Exercise 1 — {quickSession.ai_generated ? "AI Recommended" : "From Your Tracker"}
                       </p>
-                      <div style={{ display: "flex", gap: 5 }}>
-                        {quickSession.topic_question.difficulty && (
+                      <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.4 }}>
+                        {quickSession.dsa_tasks[0].label}
+                      </p>
+                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                        {quickSession.dsa_tasks[0].difficulty && (
                           <span style={{
-                            fontSize: 9, fontWeight: 700,
-                            color: DIFF_COLOR[quickSession.topic_question.difficulty] ?? "var(--text-muted)",
-                            background: `${DIFF_COLOR[quickSession.topic_question.difficulty] ?? "transparent"}20`,
-                            padding: "1px 6px", borderRadius: 99,
+                            fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 99,
+                            color: DIFF_COLOR[quickSession.dsa_tasks[0].difficulty] ?? "var(--text-muted)",
+                            background: DIFF_BG[quickSession.dsa_tasks[0].difficulty] ?? "var(--border)",
                           }}>
-                            {quickSession.topic_question.difficulty}
+                            {quickSession.dsa_tasks[0].difficulty}
                           </span>
                         )}
-                        {quickSession.topic_question.topic && (
-                          <span style={{ fontSize: 9, color: "var(--text-faint)", background: "var(--bg-elevated)", padding: "1px 6px", borderRadius: 99, border: "1px solid var(--border)" }}>
-                            {quickSession.topic_question.topic}
+                        {quickSession.dsa_tasks[0].topic && (
+                          <span style={{ fontSize: 9, color: "var(--text-faint)", background: "var(--bg-elevated)", padding: "2px 7px", borderRadius: 99, border: "1px solid var(--border)" }}>
+                            {quickSession.dsa_tasks[0].topic}
                           </span>
                         )}
                       </div>
-                      {quickSession.topic && (
-                        <p style={{ margin: "8px 0 0", fontSize: 10, color: "var(--text-muted)" }}>
-                          Focus: <strong style={{ color: "var(--text-primary)" }}>{quickSession.topic}</strong>
-                        </p>
-                      )}
                     </div>
-                  )}
+                  </div>
+                )}
+
+                {/* DSA Exercise 2 */}
+                {quickSession.dsa_tasks[1] && (
+                  <div style={{
+                    padding: "14px 16px", borderRadius: 12,
+                    background: "var(--bg-surface)", border: "1px solid var(--border)",
+                    display: "flex", gap: 14, alignItems: "flex-start",
+                  }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: "var(--accent-glow)", border: "1px solid var(--accent-glow)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                      <span style={{ fontSize: 11, fontWeight: 800, color: "var(--accent)" }}>2</span>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: "0 0 6px", fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--accent)" }}>
+                        Exercise 2 — {quickSession.ai_generated ? "AI Recommended" : "From Your Tracker"}
+                      </p>
+                      <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.4 }}>
+                        {quickSession.dsa_tasks[1].label}
+                      </p>
+                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                        {quickSession.dsa_tasks[1].difficulty && (
+                          <span style={{
+                            fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 99,
+                            color: DIFF_COLOR[quickSession.dsa_tasks[1].difficulty] ?? "var(--text-muted)",
+                            background: DIFF_BG[quickSession.dsa_tasks[1].difficulty] ?? "var(--border)",
+                          }}>
+                            {quickSession.dsa_tasks[1].difficulty}
+                          </span>
+                        )}
+                        {quickSession.dsa_tasks[1].topic && (
+                          <span style={{ fontSize: 9, color: "var(--text-faint)", background: "var(--bg-elevated)", padding: "2px 7px", borderRadius: 99, border: "1px solid var(--border)" }}>
+                            {quickSession.dsa_tasks[1].topic}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Divider */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                  <span style={{ fontSize: 9, fontWeight: 600, color: "var(--text-faint)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Topic Queue</span>
+                  <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                </div>
+
+                {/* Topic task */}
+                <div style={{
+                  padding: "14px 16px", borderRadius: 12,
+                  background: "var(--bg-surface)", border: "1px solid var(--border)",
+                  display: "flex", gap: 14, alignItems: "flex-start",
+                }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: "var(--easy-bg)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                    <span style={{ fontSize: 13 }}>📚</span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: "0 0 6px", fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--easy)" }}>
+                      Study Task — From Your Queue
+                    </p>
+                    <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.4 }}>
+                      {quickSession.topic_task.label}
+                    </p>
+                    {quickSession.topic_task.topic && (
+                      <span style={{ fontSize: 9, color: "var(--text-faint)", background: "var(--bg-elevated)", padding: "2px 7px", borderRadius: 99, border: "1px solid var(--border)" }}>
+                        {quickSession.topic_task.topic}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
               </div>
@@ -417,7 +473,7 @@ export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, 
                                 <span style={{
                                   fontSize: 9, fontWeight: 700,
                                   color: DIFF_COLOR[item.difficulty] ?? "var(--text-muted)",
-                                  background: `${DIFF_COLOR[item.difficulty] ?? "transparent"}15`,
+                                  background: DIFF_BG[item.difficulty] ?? "var(--border)",
                                   padding: "1px 6px", borderRadius: 99,
                                 }}>
                                   {item.difficulty}

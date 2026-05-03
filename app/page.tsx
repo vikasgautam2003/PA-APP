@@ -13,6 +13,7 @@ import TaskCheckbox from "@/components/planner/TaskCheckbox";
 import type { DayPlan, DayPlanItem } from "@/types";
 import type { CalendarEvent } from "@/lib/calendar";
 import type { GmailMessage } from "@/lib/gmail";
+import { attachmentIcon, formatBytes, DRIVE_META } from "@/lib/gmail";
 
 const DIFF_COLOR: Record<string, string> = {
   Easy: "#16a34a", Medium: "#d97706", Hard: "#dc2626",
@@ -679,38 +680,72 @@ Write today's brief.`;
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {gmailEmails.slice(0, 8).map((email) => (
-                  <div key={email.id} onClick={() => setSelectedEmail(email)} style={{
-                    border: `1px solid ${email.meetingLinks.length > 0 ? "var(--accent)" : "var(--border)"}`,
-                    borderRadius: 11, padding: "10px 13px",
-                    background: email.meetingLinks.length > 0 ? "var(--accent-glow)" : "var(--bg-elevated)",
-                    boxShadow: "var(--shadow-card)", cursor: "pointer",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 2 }}>
-                      {!email.isRead && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", flexShrink: 0, marginTop: 5 }} />}
-                      <p style={{ fontSize: 12, fontWeight: email.isRead ? 400 : 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-                        {email.subject}
-                      </p>
-                    </div>
-                    <p style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: email.snippet ? 4 : 0, paddingLeft: !email.isRead ? 13 : 0 }}>
-                      {email.from} · {new Date(email.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                    {email.snippet && (
-                      <p style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4, paddingLeft: !email.isRead ? 13 : 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {email.snippet}
-                      </p>
-                    )}
-                    {email.meetingLinks.length > 0 && (
-                      <div style={{ display: "flex", gap: 6, marginTop: 6, paddingLeft: !email.isRead ? 13 : 0 }}>
-                        {email.meetingLinks.map((link, i) => (
-                          <button key={i} onClick={async (e) => { e.stopPropagation(); const { open } = await import("@tauri-apps/plugin-shell"); await open(link); }} style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: "var(--accent)", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 8px var(--accent-glow)" }}>
-                            🔗 Join
-                          </button>
+                {gmailEmails.slice(0, 8).map((email) => {
+                  const hasDrive   = email.driveLinks?.length > 0;
+                  const hasMeeting = email.meetingLinks.length > 0;
+                  const firstDrive = hasDrive ? DRIVE_META[email.driveLinks[0].type] : null;
+                  const borderColor = hasMeeting ? "var(--accent)" : hasDrive ? firstDrive!.color : "var(--border)";
+                  const bgColor     = hasMeeting ? "var(--accent-glow)" : hasDrive ? firstDrive!.bgColor : "var(--bg-elevated)";
+                  return (
+                    <div key={email.id} onClick={() => setSelectedEmail(email)} style={{
+                      border: `1px solid ${borderColor}`,
+                      borderRadius: 11, padding: "10px 13px",
+                      background: bgColor, boxShadow: "var(--shadow-card)", cursor: "pointer",
+                    }}>
+                      {/* Subject row */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                        {!email.isRead && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />}
+                        <p style={{ fontSize: 12, fontWeight: email.isRead ? 400 : 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                          {email.subject}
+                        </p>
+                        {/* Drive type badges */}
+                        {hasDrive && [...new Set(email.driveLinks.map(d => d.type))].map(type => (
+                          <span key={type} style={{ fontSize: 11, flexShrink: 0 }} title={DRIVE_META[type].label}>
+                            {DRIVE_META[type].icon}
+                          </span>
                         ))}
+                        {email.attachments?.length > 0 && (
+                          <span style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0 }}>📎</span>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {/* Sender + date */}
+                      <p style={{ fontSize: 10, color: "var(--text-muted)", marginBottom: 3, paddingLeft: !email.isRead ? 11 : 0 }}>
+                        {email.from} · {new Date(email.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                      {/* Snippet */}
+                      {email.snippet && (
+                        <p style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4, paddingLeft: !email.isRead ? 11 : 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {email.snippet}
+                        </p>
+                      )}
+                      {/* Drive quick-open chips */}
+                      {hasDrive && (
+                        <div style={{ display: "flex", gap: 5, marginTop: 7, paddingLeft: !email.isRead ? 11 : 0, flexWrap: "wrap" }}>
+                          {email.driveLinks.slice(0, 3).map((dl, i) => {
+                            const meta = DRIVE_META[dl.type];
+                            return (
+                              <button key={i} onClick={async (e) => { e.stopPropagation(); const { open } = await import("@tauri-apps/plugin-shell"); await open(dl.url); }}
+                                style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 9px", borderRadius: 6, border: `1px solid ${meta.color}40`, background: meta.bgColor, color: meta.color, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>
+                                {meta.icon} Open {meta.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {/* Meeting join */}
+                      {hasMeeting && (
+                        <div style={{ display: "flex", gap: 5, marginTop: 7, paddingLeft: !email.isRead ? 11 : 0 }}>
+                          {email.meetingLinks.map((link, i) => (
+                            <button key={i} onClick={async (e) => { e.stopPropagation(); const { open } = await import("@tauri-apps/plugin-shell"); await open(link); }}
+                              style={{ padding: "3px 10px", borderRadius: 6, border: "none", background: "var(--accent)", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                              🔗 Join
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -810,34 +845,119 @@ Write today's brief.`;
 
       {/* Email detail modal */}
       {selectedEmail && (
-        <div onClick={() => setSelectedEmail(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 16, padding: "24px 26px", width: "100%", maxWidth: 520, maxHeight: "80vh", overflowY: "auto", boxShadow: "0 8px 40px rgba(0,0,0,0.5)" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+        <div
+          onClick={() => setSelectedEmail(null)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 20, width: "100%", maxWidth: 600, maxHeight: "86vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,0.7)", overflow: "hidden" }}
+          >
+            {/* ── Subject bar ── */}
+            <div style={{ padding: "18px 22px 14px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexShrink: 0 }}>
               <div style={{ flex: 1 }}>
-                {!selectedEmail.isRead && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", marginRight: 8, verticalAlign: "middle" }} />}
-                <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", display: "inline", lineHeight: 1.3 }}>{selectedEmail.subject}</p>
+                {!selectedEmail.isRead && (
+                  <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "var(--accent)", marginRight: 9, verticalAlign: "middle", boxShadow: "0 0 6px var(--accent)" }} />
+                )}
+                <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.35 }}>{selectedEmail.subject}</span>
               </div>
-              <button onClick={() => setSelectedEmail(null)} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 18, cursor: "pointer", lineHeight: 1, flexShrink: 0 }}>×</button>
+              <button
+                onClick={() => setSelectedEmail(null)}
+                style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text-muted)", fontSize: 16, cursor: "pointer", lineHeight: 1, flexShrink: 0, width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}
+              >×</button>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-              <div style={{ display: "flex", gap: 8 }}>
-                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", width: 48, flexShrink: 0 }}>FROM</span>
-                <span style={{ fontSize: 12, color: "var(--text-primary)", wordBreak: "break-word" }}>{selectedEmail.from}</span>
+
+            {/* ── Sender row ── */}
+            <div style={{ padding: "12px 22px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--accent)", border: "2px solid var(--accent-glow)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>{selectedEmail.from.charAt(0).toUpperCase()}</span>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text-muted)", width: 48, flexShrink: 0 }}>DATE</span>
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{new Date(selectedEmail.date).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedEmail.from}</p>
+                <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                  {(() => {
+                    const d = new Date(selectedEmail.date);
+                    return isNaN(d.getTime()) ? selectedEmail.date : d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+                  })()}
+                </p>
               </div>
+              {selectedEmail.isRead
+                ? <span style={{ fontSize: 9, fontWeight: 600, color: "var(--text-faint)", letterSpacing: "0.06em", textTransform: "uppercase" }}>Read</span>
+                : <span style={{ fontSize: 9, fontWeight: 700, color: "var(--accent)", background: "var(--accent-glow)", padding: "2px 8px", borderRadius: 99, letterSpacing: "0.06em", textTransform: "uppercase" }}>Unread</span>
+              }
             </div>
-            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
-              <p style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                {(selectedEmail.body || selectedEmail.snippet || "No preview available.").replace(/<[^>]+>/g, "").trim()}
-              </p>
+
+            {/* ── Attachments ── */}
+            {selectedEmail.attachments?.length > 0 && (
+              <div style={{ padding: "10px 22px", borderBottom: "1px solid var(--border)", display: "flex", flexWrap: "wrap", gap: 6, flexShrink: 0 }}>
+                <span style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.08em", alignSelf: "center", marginRight: 4 }}>Attachments</span>
+                {selectedEmail.attachments.map((att, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 8, background: "var(--bg-surface)", border: "1px solid var(--border)", maxWidth: 200 }}>
+                    <span style={{ fontSize: 13 }}>{attachmentIcon(att.mimeType)}</span>
+                    <span style={{ fontSize: 10, color: "var(--text-primary)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{att.filename}</span>
+                    {att.size > 0 && <span style={{ fontSize: 9, color: "var(--text-muted)", flexShrink: 0 }}>{formatBytes(att.size)}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Drive / shared files ── */}
+            {selectedEmail.driveLinks?.length > 0 && (
+              <div style={{ padding: "12px 22px", borderBottom: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+                <span style={{ fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Shared Files</span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                  {selectedEmail.driveLinks.map((dl, i) => {
+                    const meta = DRIVE_META[dl.type];
+                    return (
+                      <button
+                        key={i}
+                        onClick={async () => { const { open } = await import("@tauri-apps/plugin-shell"); await open(dl.url); }}
+                        style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 13px", borderRadius: 9, border: `1px solid ${meta.color}40`, background: meta.bgColor, color: meta.color, fontSize: 12, fontWeight: 600, cursor: "pointer", maxWidth: 280 }}
+                      >
+                        <span style={{ fontSize: 16 }}>{meta.icon}</span>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Open in {meta.label}</span>
+                        <span style={{ fontSize: 10, opacity: 0.7, marginLeft: "auto", flexShrink: 0 }}>↗</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── Body ── */}
+            <div
+              style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "20px 24px", minWidth: 0 }}
+              onClick={async (e) => {
+                const target = e.target as HTMLElement;
+                const anchor = target.closest("a[data-href]") as HTMLElement | null;
+                if (anchor) {
+                  e.preventDefault();
+                  const href = anchor.getAttribute("data-href");
+                  if (href) { const { open } = await import("@tauri-apps/plugin-shell"); await open(href); }
+                }
+              }}
+            >
+              {selectedEmail.bodyHtml ? (
+                <div
+                  className="email-body"
+                  dangerouslySetInnerHTML={{ __html: selectedEmail.bodyHtml }}
+                />
+              ) : (
+                <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.8, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                  {(selectedEmail.body || selectedEmail.snippet || "No preview available.").trim()}
+                </p>
+              )}
             </div>
+
+            {/* ── Join meeting ── */}
             {selectedEmail.meetingLinks.length > 0 && (
-              <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+              <div style={{ padding: "12px 22px 18px", borderTop: "1px solid var(--border)", display: "flex", gap: 8, flexWrap: "wrap", flexShrink: 0 }}>
                 {selectedEmail.meetingLinks.map((link, i) => (
-                  <button key={i} onClick={async () => { const { open } = await import("@tauri-apps/plugin-shell"); await open(link); }} style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "var(--accent)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 12px var(--accent-glow)" }}>
+                  <button
+                    key={i}
+                    onClick={async () => { const { open } = await import("@tauri-apps/plugin-shell"); await open(link); }}
+                    style={{ padding: "8px 20px", borderRadius: 10, border: "none", background: "var(--accent)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 0 16px var(--accent-glow)", display: "flex", alignItems: "center", gap: 6 }}
+                  >
                     🔗 Join Meeting
                   </button>
                 ))}
