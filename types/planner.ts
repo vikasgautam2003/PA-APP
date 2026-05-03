@@ -45,6 +45,25 @@ export interface WeekPlan {
   generated_at: string;
 }
 
+export interface QuickSessionTask {
+  label: string;
+  topic: string;
+}
+
+export interface QuickSessionDSA {
+  id: number;
+  label: string;
+  topic: string;
+  difficulty: string;
+}
+
+export interface QuickSession {
+  topic: string;
+  tasks: QuickSessionTask[];
+  easy_questions: QuickSessionDSA[];
+  topic_question: QuickSessionDSA;
+}
+
 export interface QuestionNote {
   id: number;
   user_id: number;

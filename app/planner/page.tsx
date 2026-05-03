@@ -20,8 +20,9 @@ export default function PlannerPage() {
   const {
     activeTab, setActiveTab, currentPlan, topics,
     isLoading, isGenerating, celebratingDay, setCelebratingDay,
+    quickSession, isSessionLoading,
     generateWeekPlan, addTopic, deleteTopic,
-    deleteWeekPlan, improvePlan, markItemDone,
+    deleteWeekPlan, improvePlan, markItemDone, getQuickSession,
   } = usePlanner();
 
   return (
@@ -58,6 +59,9 @@ export default function PlannerPage() {
                 onDelete={deleteWeekPlan}
                 onImprovise={improvePlan}
                 onMarkDone={markItemDone}
+                quickSession={quickSession}
+                isSessionLoading={isSessionLoading}
+                onQuickSession={getQuickSession}
               />
             )}
             {activeTab === "topics" && (

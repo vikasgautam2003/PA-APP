@@ -28,7 +28,7 @@ interface Props {
 export default function RealityCheck({
   currency, dailyBudget, todayAllowance, remainingToday, spentToday,
   rollover, totalSpentThisMonth, projectedMonthSpend, projectedMonthlySavings,
-  daysInMonth, dayOfMonth, daysRemaining, monthlyFreeCash,
+  daysInMonth, dayOfMonth, daysRemaining,
   categorySummaries, transactions, onAdd, onDelete,
 }: Props) {
   const [showAdd, setShowAdd] = useState(false);
@@ -41,8 +41,20 @@ export default function RealityCheck({
   const statusColor = isOver ? "#f87171" : isLow ? "#fb923c" : "#4ade80";
   const statusLabel = isOver ? "OVER LIMIT" : isLow ? "RUNNING LOW" : "ON TRACK";
 
-  const todayStr  = new Date().toISOString().split("T")[0];
-  const todayTxns = transactions.filter((t) => t.date === todayStr);
+  const todayStr      = new Date().toISOString().split("T")[0];
+  const yesterdayStr  = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+
+  const dateGroups = transactions.reduce<Record<string, typeof transactions>>((acc, t) => {
+    (acc[t.date] ??= []).push(t);
+    return acc;
+  }, {});
+  const sortedDates = Object.keys(dateGroups).sort((a, b) => b.localeCompare(a));
+
+  function dateLabel(d: string) {
+    if (d === todayStr) return "Today";
+    if (d === yesterdayStr) return "Yesterday";
+    return new Date(d + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  }
 
   async function handleDelete(id: number) {
     setDeletingId(id);
@@ -230,70 +242,95 @@ export default function RealityCheck({
           </div>
         )}
 
-        {/* ── TODAY'S TRANSACTIONS ── */}
+        {/* ── TRANSACTIONS THIS MONTH ── */}
         <div style={{
           borderRadius: 18, overflow: "hidden",
           background: "var(--bg-elevated)", border: "1px solid rgba(255,255,255,0.07)",
         }}>
           <div style={{ padding: "18px 24px 14px", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>Today</p>
-            {todayTxns.length > 0 && (
-              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.4)", fontVariantNumeric: "tabular-nums" }}>
-                {currency}{todayTxns.reduce((a, t) => a + t.amount, 0).toLocaleString()}
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.01em" }}>Transactions</p>
+            {transactions.length > 0 && (
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.04em" }}>
+                {transactions.length} this month
               </span>
             )}
           </div>
           <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
 
-          {todayTxns.length === 0 ? (
+          {transactions.length === 0 ? (
             <div style={{ padding: "20px 24px" }}>
               <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.25)" }}>
                 Nothing logged yet.{" "}
-                <span
-                  onClick={() => setShowAdd(true)}
-                  style={{ color: "#0a84ff", cursor: "pointer", fontWeight: 500 }}
-                >+ Log first expense</span>
+                <span onClick={() => setShowAdd(true)} style={{ color: "#0a84ff", cursor: "pointer", fontWeight: 500 }}>
+                  + Log first expense
+                </span>
               </p>
             </div>
           ) : (
             <div>
-              {todayTxns.map((t, i) => {
-                const col = CATEGORY_COLORS[t.category];
+              {sortedDates.map((date) => {
+                const group = dateGroups[date];
+                const groupTotal = group.reduce((s, t) => s + t.amount, 0);
                 return (
-                  <div key={t.id} style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "13px 24px",
-                    borderTop: i > 0 ? "1px solid rgba(255,255,255,0.04)" : "none",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{
-                        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                        background: `${col}18`,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}>
-                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: col, display: "block" }} />
-                      </div>
-                      <div>
-                        <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.85)" }}>
-                          {t.note || t.category}
-                        </p>
-                        <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.25)" }}>{t.category}</p>
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: "#fff", fontVariantNumeric: "tabular-nums" }}>
-                        {currency}{t.amount.toLocaleString()}
+                  <div key={date}>
+                    {/* Date header */}
+                    <div style={{
+                      padding: "8px 24px 6px",
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      background: "rgba(255,255,255,0.025)",
+                      borderTop: "1px solid rgba(255,255,255,0.04)",
+                    }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.35)", letterSpacing: "0.04em" }}>
+                        {dateLabel(date)}
                       </span>
-                      <button
-                        onClick={() => handleDelete(t.id)}
-                        disabled={deletingId === t.id}
-                        style={{
-                          background: "none", border: "none", cursor: "pointer",
-                          color: "rgba(255,255,255,0.2)", fontSize: 18, lineHeight: 1,
-                          opacity: deletingId === t.id ? 0.3 : 1, padding: 0,
-                        }}
-                      >×</button>
+                      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontVariantNumeric: "tabular-nums" }}>
+                        {currency}{groupTotal.toLocaleString()}
+                      </span>
                     </div>
+                    {group.map((t, i) => {
+                      const col = CATEGORY_COLORS[t.category as keyof typeof CATEGORY_COLORS];
+                      return (
+                        <div key={t.id} style={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          padding: "12px 24px",
+                          borderTop: i > 0 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{
+                              width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+                              background: `${col}18`,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                            }}>
+                              <span style={{ width: 7, height: 7, borderRadius: "50%", background: col, display: "block" }} />
+                            </div>
+                            <div>
+                              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.85)" }}>
+                                {t.note || t.category}
+                              </p>
+                              <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.25)" }}>{t.category}</p>
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontVariantNumeric: "tabular-nums" }}>
+                              {currency}{t.amount.toLocaleString()}
+                            </span>
+                            <button
+                              onClick={() => handleDelete(t.id)}
+                              disabled={deletingId === t.id}
+                              title="Delete expense"
+                              style={{
+                                background: "none", border: "none", cursor: "pointer",
+                                color: "rgba(255,255,255,0.2)", fontSize: 18, lineHeight: 1,
+                                opacity: deletingId === t.id ? 0.3 : 1, padding: 0,
+                                transition: "color 0.1s",
+                              }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "#f87171"; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.2)"; }}
+                            >×</button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}

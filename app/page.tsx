@@ -36,7 +36,7 @@ export default function DashboardPage() {
   const { user } = useAuthStore();
   const { currentPlan, markItemDone } = usePlanner();
   const { emails: gmailEmails, loading: gmailLoading, error: gmailError, refetch: refetchGmail } = useGmail();
-  const { events: calEvents, loading: calLoading, noScope: calNoScope, refetch: refetchCal } = useCalendar();
+  const { events: calEvents, loading: calLoading, noScope: calNoScope, isRefreshing: calRefreshing, refetch: refetchCal } = useCalendar();
   const { gmailToken } = useSettingsStore();
   const [todayPlan, setTodayPlan] = useState<DayPlan | null>(null);
   const [brief, setBrief]         = useState<string>(() => {
@@ -591,7 +591,9 @@ Write today's brief.`;
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Calendar</p>
               {gmailToken && !calNoScope && (
-                <button onClick={() => void refetchCal()} style={{ fontSize: 10, color: "var(--accent-text)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>↺</button>
+                <button onClick={() => void refetchCal()} disabled={calRefreshing} style={{ fontSize: 10, color: "var(--accent-text)", background: "none", border: "none", cursor: calRefreshing ? "default" : "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", opacity: calRefreshing ? 0.6 : 1 }}>
+                  <span style={{ display: "inline-block", animation: calRefreshing ? "spin 0.7s linear infinite" : "none" }}>↺</span>
+                </button>
               )}
             </div>
 

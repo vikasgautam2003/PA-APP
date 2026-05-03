@@ -261,6 +261,20 @@ pub fn run() {
                     )"
                 ).execute(&pool).await.expect("Failed to create question_notes");
 
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS notes (
+                        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id    INTEGER REFERENCES users(id),
+                        title      TEXT NOT NULL,
+                        content    TEXT DEFAULT '',
+                        topic      TEXT DEFAULT '',
+                        color      TEXT DEFAULT 'default',
+                        pinned     INTEGER DEFAULT 0,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )"
+                ).execute(&pool).await.expect("Failed to create notes table");
+
                 app.manage(AppState { db: pool });
             });
 

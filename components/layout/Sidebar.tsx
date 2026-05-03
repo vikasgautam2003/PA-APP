@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/authStore";
 const NAV = [
   { href: "/",         label: "Dashboard",    emoji: "⌂" },
   { href: "/dsa",      label: "DSA Tracker",  emoji: "◈" },
+  { href: "/notes",    label: "Notes",        emoji: "✎" },
   { href: "/prompts",  label: "Prompt Vault", emoji: "✦" },
   { href: "/planner",  label: "Planner",      emoji: "▦" },
   { href: "/finance",  label: "Finance",      emoji: "◎" },

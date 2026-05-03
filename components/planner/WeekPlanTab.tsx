@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { WeekPlan } from "@/types";
+import type { WeekPlan, QuickSession } from "@/types";
 import TaskCheckbox from "./TaskCheckbox";
 
 interface Props {
@@ -11,6 +11,9 @@ interface Props {
   onDelete: () => Promise<void>;
   onImprovise: (instruction: string) => Promise<void>;
   onMarkDone: (dayDate: string, itemId: number, type: "subtopic" | "dsa") => Promise<boolean>;
+  quickSession: QuickSession | null;
+  isSessionLoading: boolean;
+  onQuickSession: (topic: string) => Promise<void>;
 }
 
 const STATUS_STYLES: Record<string, { border: string; bg: string; headerBg: string; dot: string; label: string; labelColor: string }> = {
@@ -25,13 +28,19 @@ const DIFF_COLOR: Record<string, string> = {
   Easy: "var(--easy)", Medium: "var(--medium)", Hard: "var(--hard)",
 };
 
-export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, onImprovise, onMarkDone }: Props) {
+export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, onImprovise, onMarkDone, quickSession, isSessionLoading, onQuickSession }: Props) {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const [improveText, setImproveText] = useState("");
-  const [improving,   setImproving]   = useState(false);
-  const [showDelete,  setShowDelete]  = useState(false);
+  const [improveText,   setImproveText]   = useState("");
+  const [improving,     setImproving]     = useState(false);
+  const [showDelete,    setShowDelete]    = useState(false);
+  const [sessionTopic,  setSessionTopic]  = useState("");
+
+  async function handleQuickSession() {
+    if (isSessionLoading) return;
+    await onQuickSession(sessionTopic.trim());
+  }
 
   async function handleImprovise() {
     if (!improveText.trim() || improving) return;
@@ -138,6 +147,147 @@ export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, 
             </button>
           </div>
         )}
+
+        {/* ── AI QUICK SESSION ── */}
+        <div style={{
+          borderRadius: 16, overflow: "hidden",
+          border: "1px solid var(--border)", background: "var(--bg-elevated)",
+        }}>
+          {/* Header + input row */}
+          <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ fontSize: 18, lineHeight: 1 }}>✦</div>
+            <div style={{ flex: 1 }}>
+              <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+                AI Quick Session
+              </p>
+              <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>
+                Get 3 tasks · 2 easy questions · 1 topic challenge
+              </p>
+            </div>
+            <input
+              value={sessionTopic}
+              onChange={(e) => setSessionTopic(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleQuickSession()}
+              placeholder="Topic (e.g. Arrays, DP, Graphs…)"
+              style={{
+                width: 220, padding: "9px 14px", borderRadius: 9,
+                border: "1px solid var(--border)", fontSize: 13,
+                color: "var(--text-primary)", background: "var(--bg-surface)", outline: "none",
+              }}
+              onFocus={(e) => { e.target.style.borderColor = "var(--accent)"; e.target.style.boxShadow = "0 0 0 3px var(--accent-glow)"; }}
+              onBlur={(e)  => { e.target.style.borderColor = "var(--border)";  e.target.style.boxShadow = "none"; }}
+            />
+            <button
+              onClick={handleQuickSession}
+              disabled={isSessionLoading}
+              style={{
+                padding: "9px 22px", borderRadius: 9, border: "none", fontSize: 13, fontWeight: 600,
+                cursor: isSessionLoading ? "not-allowed" : "pointer",
+                background: isSessionLoading ? "var(--border)" : "var(--accent)",
+                color: isSessionLoading ? "var(--text-muted)" : "#fff",
+                boxShadow: isSessionLoading ? "none" : "0 0 12px var(--accent-glow)",
+                display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap",
+              }}
+            >
+              {isSessionLoading ? (
+                <>
+                  <div style={{ width: 13, height: 13, borderRadius: "50%", border: "2px solid #fff4", borderTopColor: "#fff", animation: "spin 0.8s linear infinite" }} />
+                  Thinking…
+                </>
+              ) : "Ask AI"}
+            </button>
+          </div>
+
+          {/* Results */}
+          {quickSession && !isSessionLoading && (
+            <>
+              <div style={{ height: 1, background: "var(--border)" }} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 0 }}>
+
+                {/* Tasks column */}
+                <div style={{ padding: "16px 20px", borderRight: "1px solid var(--border)" }}>
+                  <p style={{ margin: "0 0 12px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--accent)" }}>
+                    3 Tasks
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {quickSession.tasks.map((t, i) => (
+                      <div key={i} style={{
+                        padding: "10px 12px", borderRadius: 10,
+                        background: "var(--bg-surface)", border: "1px solid var(--border)",
+                      }}>
+                        <p style={{ margin: "0 0 3px", fontSize: 12, fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.4 }}>{t.label}</p>
+                        <span style={{ fontSize: 10, color: "var(--text-faint)", background: "var(--bg-elevated)", padding: "1px 6px", borderRadius: 99, border: "1px solid var(--border)" }}>
+                          {t.topic}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Easy questions column */}
+                <div style={{ padding: "16px 20px", borderRight: "1px solid var(--border)" }}>
+                  <p style={{ margin: "0 0 12px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--easy)" }}>
+                    2 Easy Questions
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {quickSession.easy_questions.map((q, i) => (
+                      <div key={i} style={{
+                        padding: "10px 12px", borderRadius: 10,
+                        background: "var(--easy-bg)", border: "1px solid var(--easy)40",
+                      }}>
+                        <p style={{ margin: "0 0 5px", fontSize: 12, fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.4 }}>{q.label}</p>
+                        <div style={{ display: "flex", gap: 5 }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: "var(--easy)", background: "var(--easy)20", padding: "1px 6px", borderRadius: 99 }}>Easy</span>
+                          <span style={{ fontSize: 9, color: "var(--text-faint)", background: "var(--bg-elevated)", padding: "1px 6px", borderRadius: 99, border: "1px solid var(--border)" }}>{q.topic}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Topic challenge column */}
+                <div style={{ padding: "16px 20px" }}>
+                  <p style={{ margin: "0 0 12px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--medium)" }}>
+                    1 Topic Challenge
+                  </p>
+                  {quickSession.topic_question && quickSession.topic_question.label && (
+                    <div style={{
+                      padding: "12px 14px", borderRadius: 10,
+                      background: "var(--medium-bg)", border: "1px solid var(--medium)40",
+                    }}>
+                      <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.4 }}>
+                        {quickSession.topic_question.label}
+                      </p>
+                      <div style={{ display: "flex", gap: 5 }}>
+                        {quickSession.topic_question.difficulty && (
+                          <span style={{
+                            fontSize: 9, fontWeight: 700,
+                            color: DIFF_COLOR[quickSession.topic_question.difficulty] ?? "var(--text-muted)",
+                            background: `${DIFF_COLOR[quickSession.topic_question.difficulty] ?? "transparent"}20`,
+                            padding: "1px 6px", borderRadius: 99,
+                          }}>
+                            {quickSession.topic_question.difficulty}
+                          </span>
+                        )}
+                        {quickSession.topic_question.topic && (
+                          <span style={{ fontSize: 9, color: "var(--text-faint)", background: "var(--bg-elevated)", padding: "1px 6px", borderRadius: 99, border: "1px solid var(--border)" }}>
+                            {quickSession.topic_question.topic}
+                          </span>
+                        )}
+                      </div>
+                      {quickSession.topic && (
+                        <p style={{ margin: "8px 0 0", fontSize: 10, color: "var(--text-muted)" }}>
+                          Focus: <strong style={{ color: "var(--text-primary)" }}>{quickSession.topic}</strong>
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            </>
+          )}
+        </div>
 
         {!plan ? (
           <div style={{

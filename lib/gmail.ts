@@ -4,8 +4,7 @@ import { askGroq } from "@/lib/groq";
 const nativeFetch = globalThis.fetch.bind(globalThis);
 
 const GMAIL_API = "https://gmail.googleapis.com/gmail/v1";
-const MEETING_KEYWORDS = ["zoom", "meet", "meeting", "invite", "calendar", "call", "standup", "sync"];
-const MEETING_LINK_REGEX = /https?:\/\/(zoom\.us\/j|meet\.google\.com|teams\.microsoft\.com)\/[^\s"<>]+/gi;
+const MEETING_LINK_REGEX = /https?:\/\/(?:[a-z0-9-]+\.)?zoom\.us\/j\/[^\s"<>]+|https?:\/\/meet\.google\.com\/[^\s"<>]+|https?:\/\/teams\.microsoft\.com\/[^\s"<>]+/gi;
 
 export interface GmailMessage {
   id: string;
@@ -18,7 +17,7 @@ export interface GmailMessage {
   isRead: boolean;
 }
 
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   const { gmailRefreshToken, gmailClientId, gmailClientSecret, setGmailTokens } = useSettingsStore.getState();
   if (!gmailRefreshToken || !gmailClientId || !gmailClientSecret) return null;
 
@@ -93,16 +92,18 @@ export async function fetchMeetingEmails(): Promise<GmailMessage[]> {
         const date    = headers.find((h) => h.name === "Date")?.value ?? "";
         const snippet = detail.snippet ?? "";
 
-        // still tag meeting emails but don't skip non-meeting ones
-        const text = `${subject} ${snippet}`.toLowerCase();
-        const isMeetingEmail = MEETING_KEYWORDS.some((kw) => text.includes(kw));
-
         const meetingLinks: string[] = [];
         let bodyText = "";
+        function decodeBase64Utf8(b64: string): string {
+          const binary = atob(b64.replace(/-/g, "+").replace(/_/g, "/"));
+          const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+          return new TextDecoder("utf-8").decode(bytes);
+        }
+
         function extractParts(part: unknown) {
           const p = part as { mimeType?: string; body?: { data?: string }; parts?: unknown[] };
           if (p.body?.data) {
-            const decoded = atob(p.body.data.replace(/-/g, "+").replace(/_/g, "/"));
+            const decoded = decodeBase64Utf8(p.body.data);
             const found   = decoded.match(MEETING_LINK_REGEX) ?? [];
             meetingLinks.push(...found.map((l) => l.replace(/['"]/g, "")));
             if (p.mimeType === "text/plain" && !bodyText) {
@@ -114,7 +115,7 @@ export async function fetchMeetingEmails(): Promise<GmailMessage[]> {
         extractParts(detail.payload);
 
         if (!bodyText && detail.payload?.body?.data) {
-          const decoded = atob(detail.payload.body.data.replace(/-/g, "+").replace(/_/g, "/"));
+          const decoded = decodeBase64Utf8(detail.payload.body.data);
           bodyText = decoded.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
         }
 
@@ -126,7 +127,7 @@ export async function fetchMeetingEmails(): Promise<GmailMessage[]> {
         messages.push({
           id: msg.id,
           subject,
-          from: from.replace(/<.*>/, "").trim(),
+          from: from.replace(/<[^>]*>/, "").replace(/^["'\s]+|["'\s]+$/g, "").trim(),
           date,
           snippet: snippet.slice(0, 120),
           body: bodyText.slice(0, 800),

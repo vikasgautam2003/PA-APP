@@ -22,6 +22,15 @@ export default function CrystalBall({
   const daysInMo = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   const monthPct = today.getDate() / daysInMo;
 
+  // 1-year goal guide
+  const targetMonths = data.target_date
+    ? Math.max(1, Math.round((new Date(data.target_date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24 * 30.44)))
+    : 12;
+  const neededPerMonth = data.savings_goal > 0 ? Math.ceil(data.savings_goal / targetMonths) : 0;
+  const currentPace    = scenarios[0]?.monthlySavings ?? 0;
+  const goalPct        = neededPerMonth > 0 ? Math.min(100, Math.max(0, (currentPace / neededPerMonth) * 100)) : 0;
+  const onTrack        = currentPace >= neededPerMonth;
+
   const SCENARIO_META = [
     { accentColor: "#f87171", bgColor: "rgba(248,113,113,0.06)", borderColor: "rgba(248,113,113,0.15)" },
     { accentColor: "#fb923c", bgColor: "rgba(251,146,60,0.06)",  borderColor: "rgba(251,146,60,0.15)"  },
@@ -30,6 +39,94 @@ export default function CrystalBall({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+
+      {/* ── 1-YEAR GUIDE ── */}
+      {data.savings_goal > 0 ? (
+        <div style={{
+          borderRadius: 20, padding: "26px 28px",
+          background: "var(--bg-elevated)", border: "1px solid rgba(255,255,255,0.07)",
+          position: "relative", overflow: "hidden",
+        }}>
+          <div style={{
+            position: "absolute", inset: 0, pointerEvents: "none",
+            background: onTrack
+              ? "radial-gradient(ellipse 55% 60% at 95% 10%, rgba(74,222,128,0.09) 0%, transparent 70%)"
+              : "radial-gradient(ellipse 55% 60% at 95% 10%, rgba(251,146,60,0.09) 0%, transparent 70%)",
+          }} />
+          <div style={{ position: "relative" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+              <div>
+                <p style={{ margin: "0 0 4px", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>
+                  {targetMonths <= 12 ? `${targetMonths}-month goal` : "Savings goal"}
+                </p>
+                <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums" }}>
+                  {currency}{data.savings_goal.toLocaleString()}
+                </p>
+              </div>
+              <div style={{
+                padding: "6px 14px", borderRadius: 99, fontSize: 11, fontWeight: 700,
+                background: onTrack ? "rgba(74,222,128,0.15)" : "rgba(251,146,60,0.15)",
+                color: onTrack ? "#4ade80" : "#fb923c",
+                letterSpacing: "0.05em", textTransform: "uppercase",
+              }}>
+                {onTrack ? "On Track" : "Behind"}
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
+              <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <p style={{ margin: "0 0 6px", fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>Need / month</p>
+                <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" }}>
+                  {currency}{neededPerMonth.toLocaleString()}
+                </p>
+              </div>
+              <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <p style={{ margin: "0 0 6px", fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>Saving now</p>
+                <p style={{ margin: 0, fontSize: 22, fontWeight: 800, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums", color: currentPace < 0 ? "#f87171" : "#fff" }}>
+                  {currentPace < 0 ? "−" : ""}{currency}{Math.abs(Math.round(currentPace)).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>Savings rate vs. required</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: onTrack ? "#4ade80" : "#fb923c" }}>
+                  {Math.round(goalPct)}%
+                </span>
+              </div>
+              <div style={{ height: 6, background: "rgba(255,255,255,0.07)", borderRadius: 99, overflow: "hidden" }}>
+                <div style={{
+                  height: "100%", width: `${goalPct}%`,
+                  background: onTrack
+                    ? "linear-gradient(90deg, #16a34a, #4ade80)"
+                    : "linear-gradient(90deg, #92400e, #fb923c)",
+                  borderRadius: 99, transition: "width 0.7s cubic-bezier(.4,0,.2,1)",
+                }} />
+              </div>
+              {data.target_date && (
+                <p style={{ margin: "7px 0 0", fontSize: 11, color: "rgba(255,255,255,0.25)" }}>
+                  Target: {new Date(data.target_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                  {" · "}{targetMonths} month{targetMonths !== 1 ? "s" : ""} away
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          borderRadius: 18, padding: "22px 24px",
+          background: "rgba(124,58,237,0.07)", border: "1px solid rgba(124,58,237,0.2)",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+        }}>
+          <div>
+            <p style={{ margin: "0 0 3px", fontSize: 13, fontWeight: 700, color: "#a78bfa" }}>Set a 1-year savings goal</p>
+            <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.3)" }}>Tell us your target and we'll guide you there</p>
+          </div>
+          <span style={{ fontSize: 24, color: "rgba(167,139,250,0.5)" }}>→</span>
+        </div>
+      )}
 
       {/* ── GOAL HERO ── */}
       {data.savings_goal > 0 && scenarios.length > 0 && (

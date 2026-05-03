@@ -37,6 +37,7 @@ const GROUPS = [
       { key: "savings_goal" as keyof FinanceData, label: "Target amount", isDate: false },
       { key: "target_date" as keyof FinanceData, label: "Target date", isDate: true },
     ],
+    hint: "1 year from today",
   },
 ];
 
@@ -127,10 +128,24 @@ export default function SettingsPanel({ data, onSave, onClose }: Props) {
           {GROUPS.map((group, gi) => (
             <div key={group.label}>
               {gi > 0 && <div style={{ height: 8, background: "var(--bg-base)" }} />}
-              <div style={{ padding: "12px 24px 6px" }}>
+              <div style={{ padding: "12px 24px 6px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <p style={{ margin: 0, fontSize: 11, fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--text-faint)" }}>
                   {group.label}
                 </p>
+                {"hint" in group && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = new Date();
+                      d.setFullYear(d.getFullYear() + 1);
+                      setForm((f) => ({ ...f, target_date: d.toISOString().slice(0, 10) }));
+                    }}
+                    style={{
+                      fontSize: 11, color: "#0a84ff", background: "none",
+                      border: "none", cursor: "pointer", padding: 0, fontWeight: 500,
+                    }}
+                  >1 year from today</button>
+                )}
               </div>
               <div style={{ background: "var(--bg-elevated)" }}>
                 {group.fields.map((f, fi) => (

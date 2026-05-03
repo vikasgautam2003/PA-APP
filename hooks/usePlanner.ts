@@ -5,7 +5,7 @@ import { getDb } from "@/lib/db";
 import { askGroq } from "@/lib/groq";
 import type {
   PlannerTopicWithSubtopics, PlannerSubtopic,
-  WeekPlan, DayPlan, DayPlanItem, DifficultyRamp,
+  WeekPlan, DayPlan, DayPlanItem, DifficultyRamp, QuickSession,
 } from "@/types";
 
 function getWeekStart(): string {
@@ -383,6 +383,92 @@ Return ONLY valid JSON in this exact format:
     }
   }
 
+  async function getQuickSession(topic: string): Promise<void> {
+    store.setSessionLoading(true);
+    try {
+      const db = await getDb();
+
+      // Pending subtopics from topic queue (up to 15)
+      const pendingTasks = store.topics.flatMap((t) =>
+        t.subtopics
+          .filter((s) => !s.is_done)
+          .map((s) => ({ label: s.label, topic: t.title }))
+      ).slice(0, 15);
+
+      // Easy DSA questions not yet solved
+      const easyPool = await db.select<any[]>(`
+        SELECT q.id, q.title as label, q.topic, q.difficulty
+        FROM dsa_questions q
+        LEFT JOIN dsa_progress p ON p.question_id = q.id AND p.user_id = ?
+        WHERE COALESCE(p.status, 'todo') = 'todo' AND q.difficulty = 'Easy'
+        ORDER BY RANDOM() LIMIT 10
+      `, [user!.id]);
+
+      // Topic-specific questions (any difficulty)
+      const topicPool = topic ? await db.select<any[]>(`
+        SELECT q.id, q.title as label, q.topic, q.difficulty
+        FROM dsa_questions q
+        LEFT JOIN dsa_progress p ON p.question_id = q.id AND p.user_id = ?
+        WHERE COALESCE(p.status, 'todo') = 'todo'
+          AND (LOWER(q.topic) LIKE ? OR LOWER(q.title) LIKE ?)
+        ORDER BY q.difficulty ASC LIMIT 10
+      `, [user!.id, `%${topic.toLowerCase()}%`, `%${topic.toLowerCase()}%`]) : [];
+
+      const prompt = `You are a focused study session advisor for a developer learning DSA and CS topics.
+
+USER'S PENDING TOPIC QUEUE:
+${pendingTasks.length > 0
+  ? pendingTasks.map((t, i) => `${i + 1}. [${t.topic}] ${t.label}`).join("\n")
+  : "No custom topics added yet — generate generic study tasks."}
+
+AVAILABLE EASY DSA QUESTIONS (use actual IDs):
+${easyPool.map((q) => `[ID:${q.id}] ${q.label} (${q.topic}, ${q.difficulty})`).join("\n") || "None available."}
+
+${topicPool.length > 0 ? `TOPIC-SPECIFIC QUESTIONS FOR "${topic}":
+${topicPool.map((q) => `[ID:${q.id}] ${q.label} (${q.topic}, ${q.difficulty})`).join("\n")}` : ""}
+
+FOCUS: ${topic || "General — pick the most urgent pending items"}
+
+Return ONLY valid JSON (no markdown):
+{
+  "tasks": [
+    {"label": "...", "topic": "..."},
+    {"label": "...", "topic": "..."},
+    {"label": "...", "topic": "..."}
+  ],
+  "easy_questions": [
+    {"id": <number>, "label": "...", "topic": "...", "difficulty": "Easy"},
+    {"id": <number>, "label": "...", "topic": "...", "difficulty": "Easy"}
+  ],
+  "topic_question": {"id": <number>, "label": "...", "topic": "...", "difficulty": "Medium"}
+}
+
+Rules:
+- tasks: exactly 3, taken from the TOPIC QUEUE above (use the exact label and topic)
+- easy_questions: exactly 2 Easy DSA from the EASY list (use real IDs)
+- topic_question: 1 question matching "${topic || "the user's weakest area"}", any difficulty (use real ID)`;
+
+      const raw   = await askGroq(prompt);
+      const clean = raw.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean) as Omit<QuickSession, "topic">;
+
+      store.setQuickSession({ topic, ...parsed });
+    } catch {
+      store.setQuickSession({
+        topic,
+        tasks: [
+          { label: "Review pending subtopics from your queue", topic: "General" },
+          { label: "Revisit notes from last session", topic: "General" },
+          { label: "Read one chapter or watch one lecture segment", topic: "General" },
+        ],
+        easy_questions: [],
+        topic_question: { id: 0, label: "Add topics and DSA questions to unlock this", topic: "", difficulty: "" },
+      });
+    } finally {
+      store.setSessionLoading(false);
+    }
+  }
+
   return {
     ...store,
     load,
@@ -392,5 +478,6 @@ Return ONLY valid JSON in this exact format:
     deleteWeekPlan,
     improvePlan,
     markItemDone,
+    getQuickSession,
   };
 }

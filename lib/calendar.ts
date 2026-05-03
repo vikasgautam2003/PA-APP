@@ -1,8 +1,9 @@
 import { useSettingsStore } from "@/store/settingsStore";
+import { refreshAccessToken } from "@/lib/gmail";
 
 const CALENDAR_API = "https://www.googleapis.com/calendar/v3";
 const nativeFetch  = globalThis.fetch.bind(globalThis);
-const MEET_REGEX   = /https?:\/\/(zoom\.us\/j\/?\S+|meet\.google\.com\/[a-z-]+|teams\.microsoft\.com\/l\/meetup-join\/\S+)/gi;
+const MEET_REGEX   = /https?:\/\/(?:[a-z0-9-]+\.)?zoom\.us\/j\/?\S+|https?:\/\/meet\.google\.com\/[a-z-]+|https?:\/\/teams\.microsoft\.com\/l\/meetup-join\/\S+/gi;
 
 export interface CalendarEvent {
   id:           string;
@@ -33,10 +34,21 @@ export async function fetchCalendarEvents(): Promise<CalendarEvent[]> {
     maxResults:    "20",
   });
 
-  const res = await nativeFetch(
+  let token = gmailToken;
+  let res = await nativeFetch(
     `${CALENDAR_API}/calendars/primary/events?${params.toString()}`,
-    { headers: { Authorization: `Bearer ${gmailToken}` } }
+    { headers: { Authorization: `Bearer ${token}` } }
   );
+
+  if (res.status === 401) {
+    const newToken = await refreshAccessToken();
+    if (!newToken) throw new Error("Calendar token expired. Please reconnect Gmail.");
+    token = newToken;
+    res = await nativeFetch(
+      `${CALENDAR_API}/calendars/primary/events?${params.toString()}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  }
 
   if (res.status === 401) throw new Error("Calendar token expired. Please reconnect Gmail.");
   if (res.status === 403) throw new Error("no_calendar_scope");
