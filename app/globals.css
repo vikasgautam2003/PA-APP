@@ -85,14 +85,34 @@ html, body {
   overflow-x: hidden;
   width: 100%;
 }
+
+/* Force all elements to stay within container width */
 .email-body * { max-width: 100% !important; box-sizing: border-box !important; }
-.email-body table { width: 100% !important; table-layout: fixed; }
-.email-body td, .email-body th { width: auto !important; overflow: hidden; word-break: break-word; }
 .email-body img { display: none !important; }
-.email-body [width] { width: auto !important; }
 .email-body [height] { height: auto !important; }
+
+/* Tables: auto layout so empty spacer columns collapse naturally */
+.email-body table {
+  width: 100% !important;
+  table-layout: auto !important;
+  border-collapse: collapse !important;
+  border: none !important;
+  margin-bottom: 8px;
+}
+/* Strip all cell borders — email tables are layout containers, not data grids */
+.email-body td, .email-body th {
+  border: none !important;
+  padding: 4px 8px;
+  vertical-align: top;
+  word-break: break-word;
+  font-size: 13px;
+}
+/* Hide purely empty spacer cells */
+.email-body td:empty, .email-body th:empty { display: none !important; }
+
 .email-body p  { margin: 0 0 10px; }
 .email-body div { margin-bottom: 4px; }
+.email-body div:empty { display: none; }
 .email-body strong, .email-body b { color: var(--text-primary); font-weight: 600; }
 .email-body em, .email-body i { font-style: italic; }
 .email-body h1, .email-body h2, .email-body h3,
@@ -115,9 +135,6 @@ html, body {
   word-break: break-all;
 }
 .email-body a[data-href]:hover { opacity: 0.8; }
-.email-body table { border-collapse: collapse; margin-bottom: 10px; }
-.email-body td, .email-body th { padding: 6px 10px; border: 1px solid var(--border); font-size: 12px; }
-.email-body th { background: var(--bg-surface); font-weight: 600; color: var(--text-primary); }
 .email-body blockquote {
   border-left: 3px solid var(--border);
   padding-left: 12px;
@@ -126,7 +143,6 @@ html, body {
 }
 .email-body hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
 .email-body center { text-align: left; }
-.email-body div:empty { display: none; }
 .email-body td[align="center"] { text-align: left; }
 
 

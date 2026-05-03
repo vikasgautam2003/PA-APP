@@ -851,7 +851,7 @@ Write today's brief.`;
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 20, width: "100%", maxWidth: 600, maxHeight: "86vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,0.7)", overflow: "hidden" }}
+            style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 20, width: "min(92vw, 640px)", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,0.7)", overflow: "hidden" }}
           >
             {/* ── Subject bar ── */}
             <div style={{ padding: "18px 22px 14px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexShrink: 0 }}>
@@ -926,7 +926,7 @@ Write today's brief.`;
 
             {/* ── Body ── */}
             <div
-              style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "20px 24px", minWidth: 0 }}
+              style={{ overflowY: "auto", overflowX: "hidden", padding: "20px 24px", minWidth: 0, maxHeight: "60vh" }}
               onClick={async (e) => {
                 const target = e.target as HTMLElement;
                 const anchor = target.closest("a[data-href]") as HTMLElement | null;
