@@ -148,11 +148,11 @@ export default function CalendarTab({ plan }: { plan: WeekPlan | null }) {
     ...Array(offset).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => {
       const d = new Date(viewYear, viewMonth, i + 1);
-      return { date: d.toISOString().split("T")[0], day: i + 1 };
+      return { date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`, day: i + 1 };
     }),
   ];
 
-  const todayStr = today.toISOString().split("T")[0];
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   // Month stats

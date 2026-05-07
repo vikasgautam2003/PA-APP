@@ -10,6 +10,10 @@ export interface FinanceData {
   savings_goal: number;
   target_date: string | null;
   currency: "₹" | "$";
+  fixed_categories: TransactionCategory[];
+  year_goal: number;
+  monthly_savings_target: number;
+  preferred_savings_source: "monthly" | "year";
 }
 
 export interface SavingsProjection {

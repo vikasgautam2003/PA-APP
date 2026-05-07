@@ -4,7 +4,7 @@ import type {
   Transaction, CategorySummary, ScenarioProjection, MonthlySnapshot,
 } from "@/types";
 
-export type FinanceTab = "reality" | "crystal" | "guru";
+export type FinanceTab = "reality" | "savings" | "crystal" | "guru";
 
 interface FinanceStore {
   activeTab: FinanceTab;
@@ -37,6 +37,8 @@ const DEFAULT_DATA: FinanceData = {
   stipend: 0, rent: 0, food: 0, transport: 0,
   subscriptions: 0, misc: 0, savings_goal: 0,
   target_date: null, currency: "₹",
+  fixed_categories: ["Rent"], year_goal: 0, monthly_savings_target: 0,
+  preferred_savings_source: "monthly",
 };
 
 export const useFinanceStore = create<FinanceStore>((set) => ({

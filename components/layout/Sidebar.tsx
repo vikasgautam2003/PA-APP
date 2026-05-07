@@ -11,8 +11,10 @@ const NAV = [
   { href: "/notes",    label: "Notes",        emoji: "✎" },
   { href: "/prompts",  label: "Prompt Vault", emoji: "✦" },
   { href: "/planner",  label: "Planner",      emoji: "▦" },
+  { href: "/fde",      label: "FDE Prep",     emoji: "◆" },
   { href: "/finance",  label: "Finance",      emoji: "◎" },
-  { href: "/settings", label: "Settings",     emoji: "⚙" },
+  { href: "/learning-log", label: "Learning Log", emoji: "✐" },
+  { href: "/settings",    label: "Settings",     emoji: "⚙" },
 ];
 
 interface Props { open: boolean; onToggle: () => void; }

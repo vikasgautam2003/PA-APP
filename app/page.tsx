@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useAuthStore } from "@/store/authStore";
 import { getDb } from "@/lib/db";
@@ -10,16 +10,33 @@ import { useGmail } from "@/hooks/useGmail";
 import { useCalendar } from "@/hooks/useCalendar";
 import { useSettingsStore } from "@/store/settingsStore";
 import TaskCheckbox from "@/components/planner/TaskCheckbox";
-import type { DayPlan, DayPlanItem } from "@/types";
+import FdeDashboardCard from "@/components/fde/DashboardCard";
+import type { DayPlanItem } from "@/types";
 import type { CalendarEvent } from "@/lib/calendar";
 import type { GmailMessage } from "@/lib/gmail";
 import { attachmentIcon, formatBytes, DRIVE_META } from "@/lib/gmail";
+import { runNotificationTick } from "@/lib/notifications";
 
 const DIFF_COLOR: Record<string, string> = {
   Easy: "#16a34a", Medium: "#d97706", Hard: "#dc2626",
 };
 
 const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function computeStreak(dates: string[]): number {
+  if (dates.length === 0) return 0;
+  const dateSet = new Set(dates);
+  const today = localDateStr(new Date());
+  const d = new Date();
+  if (!dateSet.has(today)) d.setDate(d.getDate() - 1);
+  let s = 0;
+  while (dateSet.has(localDateStr(d))) { s++; d.setDate(d.getDate() - 1); }
+  return s;
+}
 
 function getWeekDays() {
   const today = new Date();
@@ -29,7 +46,7 @@ function getWeekDays() {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    return d.toISOString().split("T")[0];
+    return localDateStr(d);
   });
 }
 
@@ -38,8 +55,10 @@ export default function DashboardPage() {
   const { currentPlan, markItemDone } = usePlanner();
   const { emails: gmailEmails, loading: gmailLoading, error: gmailError, refetch: refetchGmail } = useGmail();
   const { events: calEvents, loading: calLoading, noScope: calNoScope, isRefreshing: calRefreshing, refetch: refetchCal } = useCalendar();
-  const { gmailToken } = useSettingsStore();
-  const [todayPlan, setTodayPlan] = useState<DayPlan | null>(null);
+  const { gmailToken, notifEnabled, notifMeetingAlert, notifDsaNudgeTime, notifBriefTime } = useSettingsStore();
+  const [todayMode, setTodayMode] = useState<"planner" | "fde">(() => {
+    try { return (localStorage.getItem("ares-today-mode") as "planner" | "fde") ?? "planner"; } catch { return "planner"; }
+  });
   const [brief, setBrief]         = useState<string>(() => {
     try { return localStorage.getItem("ares-brief-text") ?? ""; } catch { return ""; }
   });
@@ -54,137 +73,29 @@ export default function DashboardPage() {
   const [tickingId, setTickingId] = useState<string | null>(null);
   const [selectedCalEvent, setSelectedCalEvent] = useState<CalendarEvent | null>(null);
   const [selectedEmail, setSelectedEmail] = useState<GmailMessage | null>(null);
+  const [dsaStreak, setDsaStreak]       = useState(0);
+  const [financeStreak, setFinanceStreak] = useState(0);
+  const [weeklyReview, setWeeklyReview] = useState<string>(() => {
+    try { return localStorage.getItem("ares-weekly-review") ?? ""; } catch { return ""; }
+  });
+  const [weeklyReviewTs, setWeeklyReviewTs] = useState<number>(() => {
+    try { return Number(localStorage.getItem("ares-weekly-review-ts") ?? "0"); } catch { return 0; }
+  });
+  const [weeklyReviewLoading, setWeeklyReviewLoading] = useState(false);
 
   const today     = new Date();
-  const todayStr  = today.toISOString().split("T")[0];
-  const todayMonth = today.toISOString().slice(0, 7);
+  const todayStr  = localDateStr(today);
+  const todayMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  const todayPlan = useMemo(
+    () => currentPlan?.days.find((d) => d.date === todayStr) ?? null,
+    [currentPlan, todayStr],
+  );
   const todayLabel = today.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
   const timeHour  = today.getHours();
   const greeting  = timeHour < 12 ? "Good morning" : timeHour < 17 ? "Good afternoon" : timeHour < 21 ? "Good evening" : "Late night grind";
 
-  async function loadDashboardData() {
-    const db = await getDb();
-
-    // Today's plan
-    if (currentPlan) {
-      const day = currentPlan.days.find((d) => d.date === todayStr);
-      setTodayPlan(day ?? null);
-
-
-      // Streak — count consecutive green days backwards
-      let s = 0;
-      const sorted = [...currentPlan.days].reverse();
-      for (const d of sorted) {
-        if (d.date >= todayStr) continue;
-        if (d.status === "green") s++;
-        else break;
-      }
-      setStreak(s);
-    }
-
-    // DSA solved
-    const dsa = await db.select<{ count: number }[]>(
-      "SELECT COUNT(*) as count FROM dsa_progress WHERE user_id = ? AND status = 'done'",
-      [user!.id]
-    );
-    setDsaSolved(dsa[0]?.count ?? 0);
-
-    // Finance
-    const fin = await db.select<{ stipend: number | null; currency: string | null }[]>(
-      "SELECT stipend, currency FROM finances WHERE user_id = ?",
-      [user!.id]
-    );
-    if (fin.length > 0) {
-      const month = todayMonth;
-      const spent = await db.select<{ total: number }[]>(
-        `SELECT COALESCE(SUM(amount), 0) as total FROM finance_transactions
-         WHERE user_id = ? AND strftime('%Y-%m', date) = ?`,
-        [user!.id, month]
-      );
-      setFinanceData({
-        stipend:  fin[0].stipend ?? 0,
-        spent:    spent[0]?.total ?? 0,
-        currency: fin[0].currency ?? "₹",
-      });
-    }
-
-    // Prompts
-    const prompts = await db.select<{ count: number }[]>(
-      "SELECT COUNT(*) as count FROM prompts WHERE user_id = ?",
-      [user!.id]
-    );
-    setPromptCount(prompts[0]?.count ?? 0);
-  }
-
-  useEffect(() => {
-    if (!user) return;
-
-    async function fetchDashboard() {
-      const db = await getDb();
-
-      if (currentPlan) {
-        const day = currentPlan.days.find((d) => d.date === todayStr);
-        setTodayPlan(day ?? null);
-
-        let s = 0;
-        const sorted = [...currentPlan.days].reverse();
-        for (const d of sorted) {
-          if (d.date >= todayStr) continue;
-          if (d.status === "green") s++;
-          else break;
-        }
-        setStreak(s);
-      }
-
-      const dsa = await db.select<{ count: number }[]>(
-        "SELECT COUNT(*) as count FROM dsa_progress WHERE user_id = ? AND status = 'done'",
-        [user!.id]
-      );
-      setDsaSolved(dsa[0]?.count ?? 0);
-
-      const fin = await db.select<{ stipend: number | null; currency: string | null }[]>(
-        "SELECT stipend, currency FROM finances WHERE user_id = ?",
-        [user!.id]
-      );
-      if (fin.length > 0) {
-        const month = todayMonth;
-        const spent = await db.select<{ total: number }[]>(
-          `SELECT COALESCE(SUM(amount), 0) as total FROM finance_transactions
-           WHERE user_id = ? AND strftime('%Y-%m', date) = ?`,
-          [user!.id, month]
-        );
-        setFinanceData({
-          stipend:  fin[0].stipend ?? 0,
-          spent:    spent[0]?.total ?? 0,
-          currency: fin[0].currency ?? "₹",
-        });
-      }
-
-      const prompts = await db.select<{ count: number }[]>(
-        "SELECT COUNT(*) as count FROM prompts WHERE user_id = ?",
-        [user!.id]
-      );
-      setPromptCount(prompts[0]?.count ?? 0);
-    }
-
-    void fetchDashboard();
-  }, [user, currentPlan, todayStr, todayMonth]);
 
   const TWO_HOURS = 2 * 60 * 60 * 1000;
-
-  useEffect(() => {
-    if (!user) return;
-    const stale = briefLastFetch === 0 || Date.now() - briefLastFetch >= TWO_HOURS;
-    if (stale && !briefLoading) void generateBrief();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    const id = setInterval(() => { void generateBrief(); }, TWO_HOURS);
-    return () => clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
 
   async function generateBrief() {
     setBriefLoading(true);
@@ -235,13 +146,152 @@ Write today's brief.`;
     }
   }
 
+  async function generateWeeklyReview() {
+    if (weeklyReviewLoading || !user) return;
+    setWeeklyReviewLoading(true);
+    try {
+      const db = await getDb();
+      const weekStart = getWeekDays()[0];
+      const weekDsa = await db.select<{ count: number }[]>(
+        `SELECT COUNT(*) as count FROM dsa_progress WHERE user_id = ? AND status = 'done' AND DATE(solved_at) >= ?`,
+        [user.id, weekStart]
+      );
+      const weekFin = await db.select<{ total: number }[]>(
+        `SELECT COALESCE(SUM(amount), 0) as total FROM finance_transactions WHERE user_id = ? AND date >= ?`,
+        [user.id, weekStart]
+      );
+      const plannerSummary = currentPlan?.days.map(d =>
+        `${d.date} (${d.status}): ${d.items.map(i => `${i.is_done ? "✓" : "○"} ${i.label}`).join(", ") || "rest"}`
+      ).join("\n") ?? "No plan this week";
+      const response = await askGroqChat(
+        [{ role: "user", content: `Week starting: ${weekStart}\nUser: ${user.username}\nPlanner:\n${plannerSummary}\nDSA solved this week: ${weekDsa[0]?.count ?? 0}\nFinance spent: ${financeData?.currency ?? "₹"}${weekFin[0]?.total ?? 0}` }],
+        `You are a personal assistant. Write a brief weekly review (under 120 words total):\n**Week of [date range]**\n- **Wins** — what went well (be specific)\n- **Focus** — what needed more attention\n- **Next week** — 2-3 concrete suggestions\nBe direct, not generic.`
+      );
+      setWeeklyReview(response);
+      const now = Date.now();
+      setWeeklyReviewTs(now);
+      try { localStorage.setItem("ares-weekly-review", response); localStorage.setItem("ares-weekly-review-ts", String(now)); } catch {}
+    } catch (e) {
+      setWeeklyReview(e instanceof Error ? e.message : "Couldn't generate weekly review.");
+    } finally {
+      setWeeklyReviewLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!user) return;
+
+    async function fetchDashboard() {
+      const db = await getDb();
+
+      if (currentPlan) {
+        let s = 0;
+        const sorted = [...currentPlan.days].reverse();
+        for (const d of sorted) {
+          if (d.date >= todayStr) continue;
+          if (d.status === "green") s++;
+          else break;
+        }
+        setStreak(s);
+      }
+
+      const dsa = await db.select<{ count: number }[]>(
+        "SELECT COUNT(*) as count FROM dsa_progress WHERE user_id = ? AND status = 'done'",
+        [user!.id]
+      );
+      setDsaSolved(dsa[0]?.count ?? 0);
+
+      const fin = await db.select<{ stipend: number | null; currency: string | null }[]>(
+        "SELECT stipend, currency FROM finances WHERE user_id = ?",
+        [user!.id]
+      );
+      if (fin.length > 0) {
+        const month = todayMonth;
+        const spent = await db.select<{ total: number }[]>(
+          `SELECT COALESCE(SUM(amount), 0) as total FROM finance_transactions
+           WHERE user_id = ? AND strftime('%Y-%m', date) = ?`,
+          [user!.id, month]
+        );
+        setFinanceData({
+          stipend:  fin[0].stipend ?? 0,
+          spent:    spent[0]?.total ?? 0,
+          currency: fin[0].currency ?? "₹",
+        });
+      }
+
+      const prompts = await db.select<{ count: number }[]>(
+        "SELECT COUNT(*) as count FROM prompts WHERE user_id = ?",
+        [user!.id]
+      );
+      setPromptCount(prompts[0]?.count ?? 0);
+
+      const dsaDates = await db.select<{ date: string }[]>(
+        `SELECT DISTINCT DATE(solved_at) as date FROM dsa_progress
+         WHERE user_id = ? AND status = 'done' AND solved_at IS NOT NULL
+         ORDER BY date DESC LIMIT 365`,
+        [user!.id]
+      );
+      setDsaStreak(computeStreak(dsaDates.map(r => r.date)));
+
+      const finDates = await db.select<{ date: string }[]>(
+        `SELECT DISTINCT date FROM finance_transactions
+         WHERE user_id = ? ORDER BY date DESC LIMIT 365`,
+        [user!.id]
+      );
+      setFinanceStreak(computeStreak(finDates.map(r => r.date)));
+    }
+
+    void fetchDashboard();
+  }, [user, currentPlan, todayStr, todayMonth]);
+
+  useEffect(() => {
+    if (!user) return;
+    const stale = briefLastFetch === 0 || Date.now() - briefLastFetch >= TWO_HOURS;
+    if (stale && !briefLoading) setTimeout(() => { void generateBrief(); }, 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const id = setInterval(() => { void generateBrief(); }, TWO_HOURS);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const lastGenDate = weeklyReviewTs > 0 ? localDateStr(new Date(weeklyReviewTs)) : "";
+    if (lastGenDate !== localDateStr(new Date())) setTimeout(() => { void generateWeeklyReview(); }, 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !notifEnabled) return;
+    const id = setInterval(() => {
+      void runNotificationTick({
+        userId: user.id,
+        meetingAlert: notifMeetingAlert,
+        dsaNudgeTime: notifDsaNudgeTime,
+        briefTime: notifBriefTime,
+        calEvents,
+      });
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [user, notifEnabled, notifMeetingAlert, notifDsaNudgeTime, notifBriefTime, calEvents]);
+
   async function handleTick(item: DayPlanItem) {
     const key = `${item.type}-${item.id}`;
     if (tickingId === key) return;
     setTickingId(key);
-    await markItemDone(todayStr, item.id, item.type);
-    await loadDashboardData();
-    setTickingId(null);
+    try {
+      // markItemDone updates the planner store; the useMemo for todayPlan
+      // re-derives from the new currentPlan. The currentPlan-dependent useEffect
+      // refreshes streak and other side metrics automatically. No extra
+      // setTodayPlan write here — that is what previously caused the wrong tick.
+      await markItemDone(todayStr, item.id, item.type);
+    } finally {
+      setTickingId(null);
+    }
   }
 
   const doneTasks  = todayPlan?.items.filter((i) => i.is_done).length ?? 0;
@@ -278,9 +328,9 @@ Write today's brief.`;
         {/* Inline stats strip */}
         <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
           {[
-            streak > 0 ? `${streak} day streak 🔥` : "Start your streak 💪",
+            `🔥 ${streak > 0 ? streak + "d" : "—"} · 💻 ${dsaStreak > 0 ? dsaStreak + "d" : "—"} · 💰 ${financeStreak > 0 ? financeStreak + "d" : "—"}`,
             `${doneTasks}/${totalTasks} tasks today`,
-            `${dsaSolved}/1000 DSA`,
+            `${dsaSolved} DSA`,
             financeData ? `${financeData.currency}${Math.round(financeData.spent).toLocaleString()} spent` : null,
             `${promptCount} prompts`,
           ].filter(Boolean).map((item, i, arr) => (
@@ -307,6 +357,35 @@ Write today's brief.`;
         {/* Left — Today's tasks + AI brief */}
         <div style={{ overflowY: "auto", padding: "32px 40px", borderRight: "1px solid var(--border)" }}>
 
+          {/* Mode toggle (Planner ↔ FDE Prep) */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 1,
+            background: "var(--bg-elevated)", border: "1px solid var(--border)",
+            borderRadius: 10, padding: 3, width: "fit-content", marginBottom: 18,
+          }}>
+            {([
+              { id: "planner", label: "▦  Today's Plan" },
+              { id: "fde",     label: "◆  FDE Prep" },
+            ] as const).map(({ id, label }) => (
+              <button key={id} onClick={() => {
+                setTodayMode(id);
+                try { localStorage.setItem("ares-today-mode", id); } catch {}
+              }} style={{
+                padding: "7px 14px", borderRadius: 7, fontSize: 12,
+                fontWeight: todayMode === id ? 600 : 500,
+                cursor: "pointer", border: "none",
+                background: todayMode === id ? "var(--bg-surface)" : "transparent",
+                color: todayMode === id ? "var(--text-primary)" : "var(--text-muted)",
+                boxShadow: todayMode === id ? "var(--shadow-card)" : "none",
+                transition: "all 0.12s",
+              }}>{label}</button>
+            ))}
+          </div>
+
+          {todayMode === "fde" ? (
+            <FdeDashboardCard />
+          ) : (
+          <>
           {/* Section header */}
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 24 }}>
             <div>
@@ -342,10 +421,16 @@ Write today's brief.`;
               boxShadow: "var(--shadow-card)",
               display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginBottom: 24,
             }}>
-              <span style={{ fontSize: 40 }}>▦</span>
-              <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>No tasks planned for today</p>
+              <span style={{ fontSize: 40 }}>{todayPlan?.status === "rest" ? "🌿" : "▦"}</span>
+              <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>
+                {todayPlan?.status === "rest" ? "Rest day" : "No tasks planned for today"}
+              </p>
               <p style={{ fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>
-                Go to the Planner tab to generate your week plan
+                {todayPlan?.status === "rest"
+                  ? "Recharge — your next tasks start tomorrow"
+                  : !currentPlan
+                  ? "Go to the Planner tab to generate your week plan"
+                  : "Your plan is loaded — open the Planner tab to view it"}
               </p>
             </div>
           ) : (
@@ -410,12 +495,15 @@ Write today's brief.`;
               })}
             </div>
           )}
+          </>
+          )}
 
           {/* AI Brief */}
           <div style={{
             border: "1px solid var(--border)", borderRadius: 12,
             overflow: "hidden", background: "var(--bg-elevated)",
             boxShadow: "var(--shadow-card)",
+            marginTop: 32,
           }}>
             <div style={{
               padding: "14px 20px",
@@ -586,6 +674,48 @@ Write today's brief.`;
               })}
             </div>
           </div>
+
+          {/* Weekly Review */}
+          {(weeklyReview || weeklyReviewLoading) && (
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Weekly Review</p>
+                <button
+                  onClick={() => { void generateWeeklyReview(); }}
+                  disabled={weeklyReviewLoading}
+                  style={{ fontSize: 10, color: "var(--accent-text)", background: "none", border: "none", cursor: weeklyReviewLoading ? "default" : "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", opacity: weeklyReviewLoading ? 0.6 : 1 }}
+                >
+                  <span style={{ display: "inline-block", animation: weeklyReviewLoading ? "spin 1s linear infinite" : "none" }}>↺</span>
+                </button>
+              </div>
+              <div style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "14px 16px", background: "var(--bg-elevated)", boxShadow: "var(--shadow-card)" }}>
+                {weeklyReviewLoading ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", border: "2px solid var(--border)", borderTopColor: "var(--accent)", animation: "spin 0.8s linear infinite" }} />
+                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Generating review…</span>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12, lineHeight: 1.7, color: "var(--text-secondary)" }}>
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p style={{ marginBottom: 6, color: "var(--text-secondary)" }}>{children}</p>,
+                        strong: ({ children }) => <strong style={{ color: "var(--text-primary)", fontWeight: 700 }}>{children}</strong>,
+                        ul: ({ children }) => <ul style={{ paddingLeft: 0, margin: "4px 0", listStyle: "none" }}>{children}</ul>,
+                        li: ({ children }) => (
+                          <li style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
+                            <div style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--accent)", marginTop: 7, flexShrink: 0 }} />
+                            <span>{children}</span>
+                          </li>
+                        ),
+                      }}
+                    >
+                      {weeklyReview}
+                    </ReactMarkdown>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Google Calendar */}
           <div>

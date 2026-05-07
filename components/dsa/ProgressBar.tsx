@@ -46,7 +46,6 @@ export default function ProgressBar({ totalDone, total, easySolved, easyTotal, m
       {/* Difficulty cards — vertical layout so label never squishes into count */}
       <div style={{ display: "flex", gap: 8 }}>
         {diffs.map(({ label, solved, tot, color, bg }) => {
-          const p = tot > 0 ? Math.round((solved / tot) * 100) : 0;
           return (
             <div key={label} style={{
               flex: 1, display: "flex", flexDirection: "column", gap: 8,
@@ -70,10 +69,6 @@ export default function ProgressBar({ totalDone, total, easySolved, easyTotal, m
                 </span>
               </span>
 
-              {/* Mini bar */}
-              <div style={{ height: 2, background: `${color}28`, borderRadius: 99 }}>
-                <div style={{ height: "100%", width: `${p}%`, background: color, borderRadius: 99 }} />
-              </div>
             </div>
           );
         })}

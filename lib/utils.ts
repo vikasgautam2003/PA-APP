@@ -22,12 +22,16 @@ export function truncate(text: string, maxLength: number): string {
   return text.slice(0, maxLength) + "...";
 }
 
+export function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export function getWeekStart(date: Date = new Date()): string {
   const d = new Date(date);
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   d.setDate(diff);
-  return d.toISOString().split("T")[0];
+  return localDateStr(d);
 }
 
 export function calculateSavings(

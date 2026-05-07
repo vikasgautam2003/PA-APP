@@ -1,7 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { FinanceData } from "@/types";
+import type { FinanceData, TransactionCategory } from "@/types";
+import { CATEGORIES } from "@/hooks/useFinance";
+
+function Row({ color, label, hint, amount, strong }: {
+  color: string; label: string; hint: string; amount: string; strong?: boolean;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
+        <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2, minWidth: 0 }}>
+          <span style={{ fontSize: 12, fontWeight: strong ? 600 : 500, color: "var(--text-primary)" }}>{label}</span>
+          <span style={{ fontSize: 10, color: "var(--text-faint)" }}>{hint}</span>
+        </span>
+      </div>
+      <span style={{ fontSize: 13, fontWeight: strong ? 700 : 600, color: strong ? color : "var(--text-primary)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+        {amount}
+      </span>
+    </div>
+  );
+}
 
 interface Props {
   data: FinanceData;
@@ -39,6 +59,14 @@ const GROUPS = [
     ],
     hint: "1 year from today",
   },
+  {
+    label: "Savings target",
+    fields: [
+      { key: "year_goal" as keyof FinanceData, label: "By Dec 31 (optional)", isDate: false },
+      { key: "monthly_savings_target" as keyof FinanceData, label: "Per month (optional)", isDate: false },
+    ],
+    hint2: "Per-month wins if both set",
+  },
 ];
 
 export default function SettingsPanel({ data, onSave, onClose }: Props) {
@@ -56,6 +84,14 @@ export default function SettingsPanel({ data, onSave, onClose }: Props) {
     }));
   }
 
+  function toggleFixed(cat: TransactionCategory) {
+    setForm((f) => {
+      const list = f.fixed_categories ?? ["Rent"];
+      const next = list.includes(cat) ? list.filter((c) => c !== cat) : [...list, cat];
+      return { ...f, fixed_categories: next };
+    });
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -64,9 +100,28 @@ export default function SettingsPanel({ data, onSave, onClose }: Props) {
   }
 
   const currency    = form.currency ?? "₹";
-  const totalBudget = form.rent + form.food + form.transport + form.subscriptions + form.misc;
-  const freeCash    = form.stipend - totalBudget;
+  const otherBudgets = form.food + form.transport + form.subscriptions + form.misc;
+  const monthsRemaining = Math.max(1, 12 - new Date().getMonth());
+  const yearGoalMonthly = form.year_goal > 0 ? form.year_goal / monthsRemaining : 0;
+  const effectiveSavings = form.monthly_savings_target > 0 ? form.monthly_savings_target : yearGoalMonthly;
+  const savingsHint =
+    form.monthly_savings_target > 0
+      ? "monthly target"
+      : form.year_goal > 0
+        ? `${currency}${form.year_goal.toLocaleString()} ÷ ${monthsRemaining} mo`
+        : "";
+  const totalCommitted  = form.rent + otherBudgets + effectiveSavings;
+  const freeCash        = form.stipend - totalCommitted;
+  const overBudget      = freeCash < 0;
   const sep: React.CSSProperties = { height: 1, background: "var(--border)", margin: "0 20px" };
+
+  const segments = [
+    { key: "rent",      label: "Rent",       value: form.rent,        color: "#0891b2" },
+    { key: "budgets",   label: "Budgets",    value: otherBudgets,     color: "#7c3aed" },
+    { key: "savings",   label: "Savings",    value: effectiveSavings, color: "#0a84ff" },
+    { key: "free",      label: "Free",       value: Math.max(0, freeCash), color: "#4ade80" },
+  ].filter((s) => s.value > 0);
+  const segTotal = segments.reduce((s, x) => s + x.value, 0) || 1;
 
   return (
     <>
@@ -146,6 +201,11 @@ export default function SettingsPanel({ data, onSave, onClose }: Props) {
                     }}
                   >1 year from today</button>
                 )}
+                {"hint2" in group && (
+                  <span style={{ fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.02em" }}>
+                    {(group as { hint2: string }).hint2}
+                  </span>
+                )}
               </div>
               <div style={{ background: "var(--bg-elevated)" }}>
                 {group.fields.map((f, fi) => (
@@ -178,19 +238,79 @@ export default function SettingsPanel({ data, onSave, onClose }: Props) {
             </div>
           ))}
 
-          {/* Free cash summary */}
-          <div style={{ margin: "12px 24px 0", padding: "14px 18px", borderRadius: 12, background: "var(--bg-base)", border: "1px solid var(--border)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-              <span style={{ fontSize: 12, color: "var(--text-faint)" }}>Total budgeted</span>
-              <span style={{ fontSize: 12, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>{currency}{totalBudget.toLocaleString()}</span>
+          {/* Permanent categories — excluded from daily allowance & savings projection */}
+          <div style={{ height: 8, background: "var(--bg-base)" }} />
+          <div style={{ padding: "12px 24px 6px" }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--text-faint)" }}>
+              Permanent categories
+            </p>
+            <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--text-faint)" }}>
+              Necessities — logged but excluded from daily allowance & savings forecast
+            </p>
+          </div>
+          <div style={{ background: "var(--bg-elevated)", padding: "8px 24px 14px", display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {CATEGORIES.map((cat) => {
+              const on = (form.fixed_categories ?? ["Rent"]).includes(cat);
+              return (
+                <button
+                  type="button"
+                  key={cat}
+                  onClick={() => toggleFixed(cat)}
+                  style={{
+                    padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
+                    background: on ? "rgba(10,132,255,0.18)" : "var(--bg-base)",
+                    border: `1px solid ${on ? "rgba(10,132,255,0.45)" : "var(--border)"}`,
+                    color: on ? "#0a84ff" : "var(--text-faint)",
+                    cursor: "pointer", transition: "all 0.12s",
+                  }}
+                >{on ? "✓ " : ""}{cat}</button>
+              );
+            })}
+          </div>
+
+          {/* Where your monthly income goes — visual breakdown */}
+          <div style={{ margin: "12px 24px 0", padding: "16px 18px", borderRadius: 12, background: "var(--bg-base)", border: "1px solid var(--border)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Where your {currency}{form.stipend.toLocaleString()} goes</span>
+              {overBudget && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--hard)", letterSpacing: "0.05em" }}>
+                  OVER BY {currency}{Math.abs(freeCash).toLocaleString()}
+                </span>
+              )}
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: freeCash < 0 ? "var(--hard)" : "var(--text-primary)" }}>
-                {freeCash < 0 ? "Over budget" : "Unallocated"}
-              </span>
-              <span style={{ fontSize: 14, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: freeCash < 0 ? "var(--hard)" : "var(--easy)" }}>
-                {freeCash < 0 ? "−" : ""}{currency}{Math.abs(freeCash).toLocaleString()}
-              </span>
+
+            {/* Stacked bar */}
+            <div style={{
+              display: "flex", height: 8, borderRadius: 99, overflow: "hidden",
+              background: "rgba(255,255,255,0.05)", marginBottom: 14,
+            }}>
+              {segments.map((s) => (
+                <div key={s.key} style={{
+                  flex: s.value / segTotal,
+                  background: s.color,
+                  borderRight: "2px solid var(--bg-base)",
+                }} title={`${s.label}: ${currency}${Math.round(s.value).toLocaleString()}`} />
+              ))}
+            </div>
+
+            {/* Legend */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+              {form.rent > 0 && (
+                <Row color="#0891b2" label="Rent" hint="fixed" amount={`${currency}${form.rent.toLocaleString()}`} />
+              )}
+              {otherBudgets > 0 && (
+                <Row color="#7c3aed" label="Other budgets" hint="food, transport, subs, misc" amount={`${currency}${otherBudgets.toLocaleString()}`} />
+              )}
+              {effectiveSavings > 0 && (
+                <Row color="#0a84ff" label="Savings target" hint={savingsHint} amount={`${currency}${Math.round(effectiveSavings).toLocaleString()}`} />
+              )}
+              <Row
+                color={overBudget ? "#f87171" : "#4ade80"}
+                label={overBudget ? "Shortfall" : "Free to spend or save"}
+                hint={overBudget ? "trim something above" : "not yet committed"}
+                amount={`${overBudget ? "−" : ""}${currency}${Math.abs(freeCash).toLocaleString()}`}
+                strong
+              />
             </div>
           </div>
 

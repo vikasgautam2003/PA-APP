@@ -7,11 +7,13 @@ import { initTheme, loadPersistedSettings } from "@/store/settingsStore";
 import { loadGmailCache } from "@/store/gmailCacheStore";
 import { loadCalendarCache } from "@/store/calendarCacheStore";
 import Sidebar from "@/components/layout/Sidebar";
+import QuickCapture from "@/components/QuickCapture";
 import "./globals.css";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, initialize } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [quickCaptureOpen, setQuickCaptureOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -23,6 +25,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     loadGmailCache();
     loadCalendarCache();
     document.title = "Ares";
+  }, []);
+
+  useEffect(() => {
+    const shortcut = "CommandOrControl+Shift+A";
+    import("@tauri-apps/plugin-global-shortcut").then(({ register, unregister }) => {
+      register(shortcut, () => setQuickCaptureOpen((p) => !p)).catch(() => {});
+      return () => { unregister(shortcut).catch(() => {}); };
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -55,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", background: "var(--bg-surface)" }}>
           {children}
         </main>
+        <QuickCapture open={quickCaptureOpen} onClose={() => setQuickCaptureOpen(false)} />
       </body>
     </html>
   );

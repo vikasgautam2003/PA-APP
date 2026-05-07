@@ -3,7 +3,7 @@ import type { DSAQuestionWithProgress, TopicProgress, CompanyProgress, HeatmapEn
 
 type FilterDifficulty = "All" | "Easy" | "Medium" | "Hard";
 type FilterStatus = "All" | "todo" | "solving" | "done";
-export type MainTab = "overview" | "topics" | "companies";
+export type MainTab = "overview" | "strength" | "topics" | "companies";
 
 interface DSAStore {
   questions: DSAQuestionWithProgress[];

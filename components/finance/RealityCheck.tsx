@@ -5,6 +5,39 @@ import { CATEGORY_COLORS } from "@/hooks/useFinance";
 import type { CategorySummary, Transaction, TransactionFormData } from "@/types";
 import QuickAddModal from "./QuickAddModal";
 
+function Op({ children }: { children: React.ReactNode }) {
+  return <span style={{ color: "rgba(255,255,255,0.25)", fontWeight: 400 }}>{children}</span>;
+}
+
+function SourcePill({
+  label, value, active, configured, onClick,
+}: {
+  label: string; value: string; active: boolean; configured: boolean; onClick: () => void;
+}) {
+  const dim = !configured;
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 6,
+        padding: "5px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600,
+        border: `1px solid ${active ? "rgba(10,132,255,0.45)" : "rgba(255,255,255,0.08)"}`,
+        background: active ? "rgba(10,132,255,0.15)" : "transparent",
+        color: active ? "#0a84ff" : dim ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.6)",
+        cursor: "pointer", transition: "all 0.12s",
+      }}
+      title={dim ? "Click to set in Settings" : active ? `Active: ${label}` : `Switch to ${label}`}
+    >
+      <span style={{
+        width: 6, height: 6, borderRadius: "50%",
+        background: active ? "#0a84ff" : "rgba(255,255,255,0.2)",
+      }} />
+      {label}
+      <span style={{ opacity: 0.7, fontWeight: 500 }}>{value}</span>
+    </button>
+  );
+}
+
 interface Props {
   currency: string;
   dailyBudget: number;
@@ -19,6 +52,15 @@ interface Props {
   dayOfMonth: number;
   daysRemaining: number;
   monthlyFreeCash: number;
+  stipend: number;
+  rent: number;
+  yearGoal: number;
+  monthlyTarget: number;
+  requiredMonthlySavings: number;
+  effectiveMonthlySavings: number;
+  savingsSource: "monthly" | "year" | "none";
+  onOpenSettings: () => void;
+  onSetSource: (src: "monthly" | "year") => void;
   categorySummaries: CategorySummary[];
   transactions: Transaction[];
   onAdd: (form: TransactionFormData) => Promise<void>;
@@ -28,9 +70,18 @@ interface Props {
 export default function RealityCheck({
   currency, dailyBudget, todayAllowance, remainingToday, spentToday,
   rollover, totalSpentThisMonth, projectedMonthSpend, projectedMonthlySavings,
-  daysInMonth, dayOfMonth, daysRemaining,
+  daysInMonth, dayOfMonth, daysRemaining, monthlyFreeCash,
+  stipend, rent, yearGoal, monthlyTarget, requiredMonthlySavings,
+  effectiveMonthlySavings, savingsSource, onOpenSettings, onSetSource,
   categorySummaries, transactions, onAdd, onDelete,
 }: Props) {
+
+  function handlePillClick(target: "monthly" | "year") {
+    const targetConfigured = target === "monthly" ? monthlyTarget > 0 : yearGoal > 0;
+    if (!targetConfigured) { onOpenSettings(); return; }    // not set → go set it
+    if (savingsSource === target) return;                   // already active → no-op
+    onSetSource(target);                                    // configured & inactive → switch
+  }
   const [showAdd, setShowAdd] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -139,8 +190,66 @@ export default function RealityCheck({
               }} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>{currency}{Math.round(dailyBudget)}/day</span>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>{currency}{Math.round(dailyBudget)}/day base</span>
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>Day {dayOfMonth} · {daysRemaining}d left</span>
+            </div>
+          </div>
+
+          {/* Source toggle + compact equation */}
+          <div style={{
+            marginTop: 16, padding: "10px 12px 11px",
+            background: "rgba(255,255,255,0.025)", borderRadius: 12,
+            border: "1px solid rgba(255,255,255,0.04)",
+          }}>
+            {/* Source pills */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 9 }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                <SourcePill
+                  label="Year pace"
+                  value={yearGoal > 0 ? `${currency}${Math.round(requiredMonthlySavings).toLocaleString()}/mo` : "not set"}
+                  active={savingsSource === "year"}
+                  configured={yearGoal > 0}
+                  onClick={() => handlePillClick("year")}
+                />
+                <SourcePill
+                  label="Monthly target"
+                  value={monthlyTarget > 0 ? `${currency}${Math.round(monthlyTarget).toLocaleString()}/mo` : "not set"}
+                  active={savingsSource === "monthly"}
+                  configured={monthlyTarget > 0}
+                  onClick={() => handlePillClick("monthly")}
+                />
+              </div>
+              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                {monthlyTarget > 0 && yearGoal > 0
+                  ? "click to switch"
+                  : savingsSource === "monthly" ? "monthly target"
+                  : savingsSource === "year" ? "year goal" : "no target"}
+              </span>
+            </div>
+
+            {/* Single-line equation */}
+            <div style={{
+              fontSize: 11, color: "rgba(255,255,255,0.55)",
+              fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em",
+              display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 6,
+            }}>
+              <span>{currency}{stipend.toLocaleString()}</span>
+              <Op>−</Op>
+              <span>{currency}{rent.toLocaleString()} <span style={{ color: "rgba(255,255,255,0.3)" }}>rent</span></span>
+              {effectiveMonthlySavings > 0 && (
+                <>
+                  <Op>−</Op>
+                  <span style={{ color: "#0a84ff" }}>
+                    {currency}{Math.round(effectiveMonthlySavings).toLocaleString()} <span style={{ opacity: 0.6 }}>save</span>
+                  </span>
+                </>
+              )}
+              <Op>=</Op>
+              <span>{currency}{Math.round(monthlyFreeCash).toLocaleString()}/mo</span>
+              <Op>÷</Op>
+              <span>{daysInMonth}d</span>
+              <Op>=</Op>
+              <span style={{ color: "#fff", fontWeight: 700 }}>{currency}{Math.round(dailyBudget).toLocaleString()}/day</span>
             </div>
           </div>
         </div>

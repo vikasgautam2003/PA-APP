@@ -10,6 +10,10 @@ export default function SettingsPage() {
     groqKey, setGroqKey,
     gmailToken, gmailClientId, gmailClientSecret,
     setGmailCredentials, setGmailTokens, clearGmail,
+    notifEnabled, setNotifEnabled,
+    notifMeetingAlert, setNotifMeetingAlert,
+    notifDsaNudgeTime, setNotifDsaNudgeTime,
+    notifBriefTime, setNotifBriefTime,
   } = useSettingsStore();
 
   const [groqSaved,    setGroqSaved]    = useState(false);
@@ -17,11 +21,150 @@ export default function SettingsPage() {
   const [clientSecret, setClientSecret] = useState(gmailClientSecret);
   const [connecting,   setConnecting]   = useState(false);
   const [gmailError,   setGmailError]   = useState("");
+  const [exporting,    setExporting]    = useState(false);
+  const [exportDone,   setExportDone]   = useState(false);
+  const [importing,    setImporting]    = useState(false);
+  const [importResult, setImportResult] = useState<{ count: number } | null>(null);
+  const [importError,  setImportError]  = useState("");
 
   useEffect(() => {
     setClientId(gmailClientId);
     setClientSecret(gmailClientSecret);
   }, [gmailClientId, gmailClientSecret]);
+
+  async function handleExport() {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const { getDb } = await import("@/lib/db");
+      const { useAuthStore } = await import("@/store/authStore");
+      const db = await getDb();
+      const uid = useAuthStore.getState().user?.id;
+      const [notes, tasks, dsa, finance, transactions, prompts, planner] = await Promise.all([
+        db.select("SELECT * FROM notes WHERE user_id = ?", [uid]),
+        db.select("SELECT * FROM planner_subtopics WHERE user_id = ?", [uid]),
+        db.select(`SELECT dq.*, dp.status, dp.user_notes, dp.solved_at FROM dsa_progress dp
+                   JOIN dsa_questions dq ON dq.id = dp.question_id WHERE dp.user_id = ?`, [uid]),
+        db.select("SELECT * FROM finances WHERE user_id = ?", [uid]),
+        db.select("SELECT * FROM finance_transactions WHERE user_id = ?", [uid]),
+        db.select("SELECT * FROM prompts WHERE user_id = ?", [uid]),
+        db.select("SELECT * FROM planner_week_plans WHERE user_id = ?", [uid]),
+      ]);
+      const payload = { exportedAt: new Date().toISOString(), notes, tasks, dsa, finance, transactions, prompts, planner };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ares-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setExportDone(true);
+      setTimeout(() => setExportDone(false), 3000);
+    } catch (e) {
+      console.error("Export failed:", e);
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleImport(file: File) {
+    if (importing) return;
+    setImporting(true);
+    setImportError("");
+    setImportResult(null);
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const { getDb } = await import("@/lib/db");
+      const { useAuthStore } = await import("@/store/authStore");
+      const db = await getDb();
+      const uid = useAuthStore.getState().user?.id;
+      if (!uid) throw new Error("Not logged in");
+      let count = 0;
+
+      if (Array.isArray(data.notes)) {
+        for (const n of data.notes) {
+          await db.execute(
+            `INSERT INTO notes (user_id, title, content, topic, color, pinned, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)`,
+            [uid, n.title ?? "", n.content ?? "", n.topic ?? "", n.color ?? "default", n.pinned ?? 0, n.created_at, n.updated_at]
+          );
+          count++;
+        }
+      }
+
+      if (Array.isArray(data.transactions)) {
+        for (const t of data.transactions) {
+          await db.execute(
+            `INSERT INTO finance_transactions (user_id, amount, category, note, date, created_at) VALUES (?,?,?,?,?,?)`,
+            [uid, t.amount, t.category, t.note ?? "", t.date, t.created_at]
+          );
+          count++;
+        }
+      }
+
+      if (Array.isArray(data.finance) && data.finance.length > 0) {
+        const f = data.finance[0];
+        await db.execute(
+          `INSERT OR REPLACE INTO finances (user_id, stipend, rent, food, transport, subscriptions, misc, savings_goal, target_date, currency) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+          [uid, f.stipend ?? 0, f.rent ?? 0, f.food ?? 0, f.transport ?? 0, f.subscriptions ?? 0, f.misc ?? 0, f.savings_goal ?? 0, f.target_date ?? null, f.currency ?? "₹"]
+        );
+        count++;
+      }
+
+      if (Array.isArray(data.prompts)) {
+        for (const p of data.prompts) {
+          await db.execute(
+            `INSERT INTO prompts (user_id, title, body, tags, model_target, created_at, updated_at) VALUES (?,?,?,?,?,?,?)`,
+            [uid, p.title, p.body, p.tags ?? "", p.model_target ?? "Any", p.created_at, p.updated_at]
+          );
+          count++;
+        }
+      }
+
+      if (Array.isArray(data.tasks)) {
+        for (const t of data.tasks) {
+          await db.execute(
+            `INSERT INTO planner_subtopics (topic_id, user_id, label, timestamp_raw, order_index, is_done, done_at, created_at) VALUES (?,?,?,?,?,?,?,?)`,
+            [null, uid, t.label, t.timestamp_raw ?? "", t.order_index ?? 0, t.is_done ?? 0, t.done_at ?? null, t.created_at]
+          );
+          count++;
+        }
+      }
+
+      if (Array.isArray(data.planner)) {
+        for (const p of data.planner) {
+          await db.execute(
+            `INSERT OR REPLACE INTO planner_week_plans (user_id, week_start, plan_json, generated_at) VALUES (?,?,?,?)`,
+            [uid, p.week_start, p.plan_json, p.generated_at]
+          );
+          count++;
+        }
+      }
+
+      if (Array.isArray(data.dsa)) {
+        for (const d of data.dsa) {
+          const q = await db.select<{ id: number }[]>(`SELECT id FROM dsa_questions WHERE title = ?`, [d.title]);
+          if (q.length > 0) {
+            await db.execute(
+              `INSERT OR REPLACE INTO dsa_progress (user_id, question_id, status, user_notes, solved_at) VALUES (?,?,?,?,?)`,
+              [uid, q[0].id, d.status, d.user_notes ?? "", d.solved_at ?? null]
+            );
+            count++;
+          }
+        }
+      }
+
+      setImportResult({ count });
+      setTimeout(() => setImportResult(null), 5000);
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : "Invalid backup file.");
+      setTimeout(() => setImportError(""), 5000);
+    } finally {
+      setImporting(false);
+    }
+  }
 
   async function handleConnectGmail() {
     if (!clientId || !clientSecret) {
@@ -166,6 +309,74 @@ export default function SettingsPage() {
             </div>
           </section>
 
+          {/* Notifications */}
+          <section>
+            <p style={sectionLabel}>Notifications</p>
+            <div style={{ border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden" }}>
+              <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: notifEnabled ? "1px solid var(--border)" : "none" }}>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)", marginBottom: 4 }}>Desktop Notifications</p>
+                  <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Meeting alerts, DSA nudge, and daily brief reminder</p>
+                </div>
+                <button onClick={() => setNotifEnabled(!notifEnabled)} style={{
+                  width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
+                  background: notifEnabled ? "var(--accent)" : "var(--border)",
+                  position: "relative", transition: "background 0.2s", flexShrink: 0,
+                }}>
+                  <div style={{
+                    position: "absolute", top: 3, left: notifEnabled ? 23 : 3, width: 18, height: 18,
+                    borderRadius: "50%", background: "#fff", transition: "left 0.2s",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+                  }} />
+                </button>
+              </div>
+              {notifEnabled && (
+                <>
+                  <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)" }}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)", marginBottom: 2 }}>Meeting alerts</p>
+                      <p style={{ fontSize: 11, color: "var(--text-muted)" }}>10-minute warning before calendar events</p>
+                    </div>
+                    <button onClick={() => setNotifMeetingAlert(!notifMeetingAlert)} style={{
+                      width: 36, height: 20, borderRadius: 10, border: "none", cursor: "pointer",
+                      background: notifMeetingAlert ? "var(--accent)" : "var(--border)",
+                      position: "relative", transition: "background 0.2s", flexShrink: 0,
+                    }}>
+                      <div style={{
+                        position: "absolute", top: 2, left: notifMeetingAlert ? 18 : 2, width: 16, height: 16,
+                        borderRadius: "50%", background: "#fff", transition: "left 0.2s",
+                      }} />
+                    </button>
+                  </div>
+                  <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)" }}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)", marginBottom: 2 }}>DSA nudge time</p>
+                      <p style={{ fontSize: 11, color: "var(--text-muted)" }}>Remind to solve a question if none done today</p>
+                    </div>
+                    <input
+                      type="time"
+                      value={notifDsaNudgeTime}
+                      onChange={(e) => setNotifDsaNudgeTime(e.target.value)}
+                      style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", fontSize: 13, outline: "none" }}
+                    />
+                  </div>
+                  <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)", marginBottom: 2 }}>Daily brief time</p>
+                      <p style={{ fontSize: 11, color: "var(--text-muted)" }}>Morning reminder to open Ares</p>
+                    </div>
+                    <input
+                      type="time"
+                      value={notifBriefTime}
+                      onChange={(e) => setNotifBriefTime(e.target.value)}
+                      style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", fontSize: 13, outline: "none" }}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+
           {/* Gmail */}
           <section>
             <p style={sectionLabel}>Gmail Integration</p>
@@ -288,6 +499,68 @@ export default function SettingsPage() {
                 ))}
               </div>
             )}
+          </section>
+
+          {/* Data Export / Import */}
+          <section>
+            <p style={sectionLabel}>Backup & Restore</p>
+            <div style={{ border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden" }}>
+              {/* Export row */}
+              <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20, borderBottom: "1px solid var(--border)" }}>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)", marginBottom: 4 }}>Export backup</p>
+                  <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Download a JSON file with all your notes, tasks, DSA progress, finance, and prompts</p>
+                </div>
+                <button onClick={() => { void handleExport(); }} disabled={exporting} style={{
+                  padding: "9px 22px", borderRadius: 9, border: "none",
+                  background: exportDone ? "var(--easy-bg)" : "var(--accent)",
+                  color: exportDone ? "var(--easy)" : "#fff",
+                  fontSize: 13, fontWeight: 600, cursor: exporting ? "not-allowed" : "pointer",
+                  transition: "all 0.2s", boxShadow: exportDone ? "none" : "0 0 16px var(--accent-glow)",
+                  whiteSpace: "nowrap", flexShrink: 0,
+                }}>
+                  {exportDone ? "✓ Exported" : exporting ? "Exporting…" : "Export JSON"}
+                </button>
+              </div>
+
+              {/* Import row */}
+              <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20 }}>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)", marginBottom: 4 }}>Restore from backup</p>
+                  <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Import a previously exported JSON file — merges into your current data</p>
+                  {importResult && (
+                    <p style={{ fontSize: 12, color: "var(--easy)", marginTop: 6, fontWeight: 600 }}>
+                      ✓ Imported {importResult.count} records
+                    </p>
+                  )}
+                  {importError && (
+                    <p style={{ fontSize: 12, color: "var(--hard)", marginTop: 6 }}>{importError}</p>
+                  )}
+                </div>
+                <label style={{ flexShrink: 0 }}>
+                  <input
+                    type="file"
+                    accept=".json"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void handleImport(file);
+                      e.target.value = "";
+                    }}
+                  />
+                  <span style={{
+                    display: "inline-block", padding: "9px 22px", borderRadius: 9,
+                    border: "1px solid var(--border)",
+                    background: importing ? "var(--bg-elevated)" : "var(--bg-surface)",
+                    color: importing ? "var(--text-muted)" : "var(--text-primary)",
+                    fontSize: 13, fontWeight: 600, cursor: importing ? "not-allowed" : "pointer",
+                    transition: "all 0.2s", whiteSpace: "nowrap",
+                  }}>
+                    {importing ? "Importing…" : "Import JSON"}
+                  </span>
+                </label>
+              </div>
+            </div>
           </section>
 
           {/* Account */}

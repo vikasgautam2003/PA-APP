@@ -74,6 +74,8 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_oauth::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
             let app_dir = app.path().app_data_dir()
                 .expect("Could not get app data dir");
@@ -176,20 +178,74 @@ pub fn run() {
 
                 sqlx::query(
                     "CREATE TABLE IF NOT EXISTS finances (
-                        id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                        user_id       INTEGER REFERENCES users(id) UNIQUE,
-                        stipend       REAL DEFAULT 0,
-                        rent          REAL DEFAULT 0,
-                        food          REAL DEFAULT 0,
-                        transport     REAL DEFAULT 0,
-                        subscriptions REAL DEFAULT 0,
-                        misc          REAL DEFAULT 0,
-                        savings_goal  REAL DEFAULT 0,
-                        target_date   DATE,
-                        currency      TEXT DEFAULT '₹',
-                        updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+                        id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id           INTEGER REFERENCES users(id) UNIQUE,
+                        stipend           REAL DEFAULT 0,
+                        rent              REAL DEFAULT 0,
+                        food              REAL DEFAULT 0,
+                        transport         REAL DEFAULT 0,
+                        subscriptions     REAL DEFAULT 0,
+                        misc              REAL DEFAULT 0,
+                        savings_goal      REAL DEFAULT 0,
+                        target_date       DATE,
+                        currency          TEXT DEFAULT '₹',
+                        fixed_categories         TEXT DEFAULT '[\"Rent\"]',
+                        year_goal                REAL DEFAULT 0,
+                        monthly_savings_target   REAL DEFAULT 0,
+                        preferred_savings_source TEXT DEFAULT 'monthly',
+                        updated_at               DATETIME DEFAULT CURRENT_TIMESTAMP
                     )"
                 ).execute(&pool).await.expect("Failed to create finances table");
+
+                // Migrate older finances tables that lack the new columns
+                let has_fixed_categories: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM pragma_table_info('finances') WHERE name = 'fixed_categories'"
+                )
+                .fetch_one(&pool)
+                .await
+                .unwrap_or(0);
+                if has_fixed_categories == 0 {
+                    sqlx::query("ALTER TABLE finances ADD COLUMN fixed_categories TEXT DEFAULT '[\"Rent\"]'")
+                        .execute(&pool)
+                        .await
+                        .expect("Failed to add fixed_categories column");
+                }
+                let has_year_goal: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM pragma_table_info('finances') WHERE name = 'year_goal'"
+                )
+                .fetch_one(&pool)
+                .await
+                .unwrap_or(0);
+                if has_year_goal == 0 {
+                    sqlx::query("ALTER TABLE finances ADD COLUMN year_goal REAL DEFAULT 0")
+                        .execute(&pool)
+                        .await
+                        .expect("Failed to add year_goal column");
+                }
+                let has_monthly_target: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM pragma_table_info('finances') WHERE name = 'monthly_savings_target'"
+                )
+                .fetch_one(&pool)
+                .await
+                .unwrap_or(0);
+                if has_monthly_target == 0 {
+                    sqlx::query("ALTER TABLE finances ADD COLUMN monthly_savings_target REAL DEFAULT 0")
+                        .execute(&pool)
+                        .await
+                        .expect("Failed to add monthly_savings_target column");
+                }
+                let has_pref_source: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM pragma_table_info('finances') WHERE name = 'preferred_savings_source'"
+                )
+                .fetch_one(&pool)
+                .await
+                .unwrap_or(0);
+                if has_pref_source == 0 {
+                    sqlx::query("ALTER TABLE finances ADD COLUMN preferred_savings_source TEXT DEFAULT 'monthly'")
+                        .execute(&pool)
+                        .await
+                        .expect("Failed to add preferred_savings_source column");
+                }
 
                 sqlx::query(
                     "CREATE TABLE IF NOT EXISTS finance_transactions (
@@ -274,6 +330,31 @@ pub fn run() {
                         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )"
                 ).execute(&pool).await.expect("Failed to create notes table");
+
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS learning_log (
+                        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id    INTEGER REFERENCES users(id),
+                        content    TEXT NOT NULL,
+                        tags       TEXT DEFAULT '',
+                        date       DATE NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )"
+                ).execute(&pool).await.expect("Failed to create learning_log table");
+
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS fde_progress (
+                        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id      INTEGER REFERENCES users(id),
+                        day_number   INTEGER NOT NULL,
+                        task_done    INTEGER DEFAULT 0,
+                        dsa_done     INTEGER DEFAULT 0,
+                        notes        TEXT DEFAULT '',
+                        completed_at DATETIME,
+                        updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, day_number)
+                    )"
+                ).execute(&pool).await.expect("Failed to create fde_progress table");
 
                 app.manage(AppState { db: pool });
             });

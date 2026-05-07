@@ -4,12 +4,14 @@ import { useFinance } from "@/hooks/useFinance";
 import { useFinanceStore, type FinanceTab } from "@/store/financeStore";
 import PageWrapper from "@/components/layout/PageWrapper";
 import RealityCheck from "@/components/finance/RealityCheck";
+import SavingsTab from "@/components/finance/SavingsTab";
 import CrystalBall from "@/components/finance/CrystalBall";
 import GuruChat from "@/components/finance/GuruChat";
 import SettingsPanel from "@/components/finance/SettingsPanel";
 
 const TABS: { key: FinanceTab; label: string }[] = [
   { key: "reality", label: "Reality Check" },
+  { key: "savings", label: "Savings"       },
   { key: "crystal", label: "Crystal Ball"  },
   { key: "guru",    label: "Guru"           },
 ];
@@ -20,13 +22,18 @@ export default function FinancePage() {
 
   const {
     data, isLoading,
-    categorySummaries, transactions, scenarios,
+    categorySummaries, transactions, snapshots, scenarios,
     messages, isChatLoading,
     dailyBudget, todayAllowance, remainingToday, spentToday, rollover,
     totalSpentThisMonth, projectedMonthSpend, projectedMonthlySavings,
     daysInMonth, dayOfMonth, daysRemaining, monthlyFreeCash,
+    effectiveMonthlySavings, savingsSource,
+    yearStats,
     budgetWarnings, calcExpenseImpact,
-    saveSettings, addTransaction, deleteTransaction, sendMessage, clearChat,
+    saveSettings, setPreferredSource,
+    addTransaction, deleteTransaction,
+    saveMonthlySnapshot, deleteMonthlySnapshot,
+    sendMessage, clearChat,
   } = finance;
 
   const currency = data.currency ?? "₹";
@@ -135,10 +142,31 @@ export default function FinancePage() {
             dayOfMonth={dayOfMonth}
             daysRemaining={daysRemaining}
             monthlyFreeCash={monthlyFreeCash}
+            stipend={data.stipend}
+            rent={data.rent}
+            yearGoal={data.year_goal}
+            monthlyTarget={data.monthly_savings_target}
+            requiredMonthlySavings={yearStats.requiredMonthly}
+            effectiveMonthlySavings={effectiveMonthlySavings}
+            savingsSource={savingsSource}
+            onOpenSettings={() => setSettingsOpen(true)}
+            onSetSource={setPreferredSource}
             categorySummaries={categorySummaries}
             transactions={transactions}
             onAdd={addTransaction}
             onDelete={deleteTransaction}
+          />
+        )}
+
+        {activeTab === "savings" && (
+          <SavingsTab
+            currency={currency}
+            data={data}
+            yearStats={yearStats}
+            snapshots={snapshots}
+            onOpenSettings={() => setSettingsOpen(true)}
+            onSaveSnapshot={saveMonthlySnapshot}
+            onDeleteSnapshot={deleteMonthlySnapshot}
           />
         )}
 

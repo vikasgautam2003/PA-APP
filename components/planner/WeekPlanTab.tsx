@@ -33,12 +33,14 @@ const DIFF_BG: Record<string, string> = {
 
 export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, onImprovise, onMarkDone, quickSession, isSessionLoading, onQuickSession }: Props) {
 
-  const today = new Date().toISOString().split("T")[0];
+  const _d = new Date();
+  const today = `${_d.getFullYear()}-${String(_d.getMonth() + 1).padStart(2, "0")}-${String(_d.getDate()).padStart(2, "0")}`;
 
   const [improveText,   setImproveText]   = useState("");
   const [improving,     setImproving]     = useState(false);
   const [showDelete,    setShowDelete]    = useState(false);
   const [sessionTopic,  setSessionTopic]  = useState("");
+  const [genError,      setGenError]      = useState<string | null>(null);
 
   async function handleQuickSession() {
     if (isSessionLoading) return;
@@ -93,7 +95,7 @@ export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, 
               )
             )}
 
-            <button onClick={onGenerate} disabled={isGenerating} style={{
+            <button onClick={async () => { setGenError(null); try { await onGenerate(); } catch (e) { setGenError(e instanceof Error ? e.message : "Failed to generate plan. Check console for details."); } }} disabled={isGenerating} style={{
               padding: "10px 24px", borderRadius: 10, border: "none",
               fontSize: 13, fontWeight: 600,
               cursor: isGenerating ? "not-allowed" : "pointer",
@@ -111,6 +113,12 @@ export default function WeekPlanTab({ plan, isGenerating, onGenerate, onDelete, 
             </button>
           </div>
         </div>
+
+        {genError && (
+          <div style={{ padding: "10px 16px", borderRadius: 10, background: "var(--hard-bg)", border: "1px solid var(--hard)", color: "var(--hard)", fontSize: 12 }}>
+            {genError}
+          </div>
+        )}
 
         {/* Improvise bar — only shows when plan exists */}
         {plan && (

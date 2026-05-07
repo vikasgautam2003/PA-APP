@@ -8,12 +8,16 @@ import type {
   WeekPlan, DayPlan, DayPlanItem, DifficultyRamp, QuickSession, QuickSessionDSA,
 } from "@/types";
 
+function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function getWeekStart(): string {
   const d = new Date();
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   d.setDate(diff);
-  return d.toISOString().split("T")[0];
+  return localDateStr(d);
 }
 
 function getDifficultyRamp(solved: number): DifficultyRamp {
@@ -71,6 +75,8 @@ export function usePlanner() {
       if (plans.length > 0) {
         const plan = JSON.parse(plans[0].plan_json) as WeekPlan;
         store.setCurrentPlan(plan);
+      } else {
+        store.setCurrentPlan(null);
       }
     } finally {
       store.setLoading(false);
@@ -198,7 +204,7 @@ export function usePlanner() {
       const days: DayPlan[] = DAY_NAMES.map((dayName, i) => {
         const d = new Date(startDate);
         d.setDate(startDate.getDate() + i);
-        const dateStr = d.toISOString().split("T")[0];
+        const dateStr = localDateStr(d);
 
         // Sunday = rest
         if (i === 6) return { date: dateStr, day: dayName, items: [], status: "rest" as const };
@@ -231,6 +237,9 @@ export function usePlanner() {
         [user!.id, weekStart, JSON.stringify(plan)]
       );
       store.setCurrentPlan(plan);
+    } catch (err) {
+      console.error("[generateWeekPlan] failed:", err);
+      throw err;
     } finally {
       store.setGenerating(false);
     }
