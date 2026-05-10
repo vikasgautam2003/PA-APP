@@ -14,6 +14,7 @@ export async function loadPersistedSettings() {
   try {
     const s = await getStore();
     const groqKey           = await s.get<string>("groq_key")           ?? "";
+    const serpapiKey        = await s.get<string>("serpapi_key")        ?? "";
     const theme             = await s.get<Theme>("theme")               ?? "dark";
     const gmailToken        = await s.get<string>("gmail_token")        ?? "";
     const gmailRefreshToken = await s.get<string>("gmail_refresh_token") ?? "";
@@ -24,7 +25,7 @@ export async function loadPersistedSettings() {
     const notifBriefTime    = await s.get<string>("notif_brief_time")    ?? "08:00";
     const notifEnabled      = await s.get<boolean>("notif_enabled")      ?? true;
     useSettingsStore.setState({
-      groqKey, theme, gmailToken, gmailRefreshToken, gmailClientId, gmailClientSecret,
+      groqKey, serpapiKey, theme, gmailToken, gmailRefreshToken, gmailClientId, gmailClientSecret,
       notifMeetingAlert, notifDsaNudgeTime, notifBriefTime, notifEnabled,
     });
     if (typeof document !== "undefined") {
@@ -36,6 +37,7 @@ export async function loadPersistedSettings() {
 interface SettingsStore {
   theme: Theme;
   groqKey: string;
+  serpapiKey: string;
   gmailToken: string;
   gmailRefreshToken: string;
   gmailClientId: string;
@@ -46,6 +48,7 @@ interface SettingsStore {
   notifBriefTime: string;
   setTheme: (t: Theme) => void;
   setGroqKey: (key: string) => void;
+  setSerpapiKey: (key: string) => void;
   setGmailTokens: (access: string, refresh: string) => void;
   setGmailCredentials: (clientId: string, clientSecret: string) => void;
   clearGmail: () => void;
@@ -58,6 +61,7 @@ interface SettingsStore {
 export const useSettingsStore = create<SettingsStore>((set) => ({
   theme: "dark",
   groqKey: "",
+  serpapiKey: "",
   gmailToken: "",
   gmailRefreshToken: "",
   gmailClientId: "",
@@ -79,6 +83,11 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setGroqKey: (key) => {
     set({ groqKey: key });
     getStore().then((s) => { s.set("groq_key", key); s.save(); });
+  },
+
+  setSerpapiKey: (key) => {
+    set({ serpapiKey: key });
+    getStore().then((s) => { s.set("serpapi_key", key); s.save(); });
   },
 
   setGmailTokens: (access, refresh) => {

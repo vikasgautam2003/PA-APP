@@ -55,8 +55,8 @@ export async function askGroqChat(
     body: JSON.stringify({
       model:       MODEL,
       messages:    [{ role: "system", content: systemPrompt }, ...messages],
-      temperature: 0.7,
-      max_tokens:  1024,
+      temperature: 0.55,
+      max_tokens:  4096,
     }),
   });
 

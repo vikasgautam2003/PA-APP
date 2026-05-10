@@ -8,6 +8,7 @@ export default function SettingsPage() {
   const {
     theme, setTheme,
     groqKey, setGroqKey,
+    serpapiKey, setSerpapiKey,
     gmailToken, gmailClientId, gmailClientSecret,
     setGmailCredentials, setGmailTokens, clearGmail,
     notifEnabled, setNotifEnabled,
@@ -17,6 +18,7 @@ export default function SettingsPage() {
   } = useSettingsStore();
 
   const [groqSaved,    setGroqSaved]    = useState(false);
+  const [serpapiSaved, setSerpapiSaved] = useState(false);
   const [clientId,     setClientId]     = useState(gmailClientId);
   const [clientSecret, setClientSecret] = useState(gmailClientSecret);
   const [connecting,   setConnecting]   = useState(false);
@@ -304,6 +306,39 @@ export default function SettingsPage() {
                   transition: "all 0.2s", boxShadow: groqSaved ? "none" : "0 0 16px var(--accent-glow)",
                 }}>
                   {groqSaved ? "✓ Saved" : "Save Key"}
+                </button>
+              </div>
+            </div>
+
+            {/* SerpAPI */}
+            <div style={{ border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", marginTop: 14 }}>
+              <div style={{ padding: "20px 24px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>SerpAPI Key</p>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent-text)", background: "var(--accent-glow)", padding: "2px 8px", borderRadius: 99 }}>WEB SEARCH</span>
+                </div>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 14 }}>
+                  Enables the FDE chatbot to search the web. Get a key at serpapi.com (100 free searches/month).
+                </p>
+                <input
+                  type="password"
+                  value={serpapiKey}
+                  onChange={(e) => setSerpapiKey(e.target.value)}
+                  placeholder="••••••••••••••••••••••••••••••"
+                  style={inputStyle}
+                  onFocus={(e) => { e.target.style.borderColor = "var(--accent)"; e.target.style.boxShadow = "0 0 0 3px var(--accent-glow)"; }}
+                  onBlur={(e)  => { e.target.style.borderColor = "var(--border)";  e.target.style.boxShadow = "none"; }}
+                />
+              </div>
+              <div style={{ padding: "14px 24px", borderTop: "1px solid var(--border)", background: "var(--bg-hover)" }}>
+                <button onClick={() => { setSerpapiKey(serpapiKey); setSerpapiSaved(true); setTimeout(() => setSerpapiSaved(false), 2000); }} style={{
+                  padding: "9px 22px", borderRadius: 9, border: "none",
+                  background: serpapiSaved ? "var(--easy-bg)" : "var(--accent)",
+                  color: serpapiSaved ? "var(--easy)" : "#fff",
+                  fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  transition: "all 0.2s", boxShadow: serpapiSaved ? "none" : "0 0 16px var(--accent-glow)",
+                }}>
+                  {serpapiSaved ? "✓ Saved" : "Save Key"}
                 </button>
               </div>
             </div>

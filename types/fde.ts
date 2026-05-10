@@ -70,3 +70,61 @@ export interface FdeDayProgress {
   notes: string;
   completedAt: string | null;
 }
+
+export type FdeChatRole = "user" | "assistant";
+
+export interface FdeWebResult {
+  title: string;
+  link: string;
+  snippet: string;
+}
+
+export interface FdeImageResult {
+  title: string;
+  link: string;
+  thumbnail: string;
+  original: string;
+  source: string;
+}
+
+export interface FdeVideoResult {
+  title: string;
+  link: string;
+  thumbnail: string;
+  duration: string;
+  date: string;
+  channel: string;
+  snippet: string;
+}
+
+export interface FdeAnswerBox {
+  title?: string;
+  snippet: string;
+  link?: string;
+}
+
+export interface FdeChatSources {
+  web: FdeWebResult[];
+  images: FdeImageResult[];
+  videos: FdeVideoResult[];
+  answerBox?: FdeAnswerBox;
+}
+
+export interface FdeChatMessage {
+  id: number;
+  day: number;
+  role: FdeChatRole;
+  content: string;
+  sources: FdeChatSources;
+  createdAt: string;
+}
+
+export interface FdeChatRow {
+  id: number;
+  user_id: number;
+  day_number: number;
+  role: string;
+  content: string;
+  sources: string;
+  created_at: string;
+}

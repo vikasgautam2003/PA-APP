@@ -356,6 +356,22 @@ pub fn run() {
                     )"
                 ).execute(&pool).await.expect("Failed to create fde_progress table");
 
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS fde_chat (
+                        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id     INTEGER REFERENCES users(id),
+                        day_number  INTEGER NOT NULL,
+                        role        TEXT NOT NULL,
+                        content     TEXT NOT NULL,
+                        sources     TEXT DEFAULT '',
+                        created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )"
+                ).execute(&pool).await.expect("Failed to create fde_chat table");
+
+                sqlx::query(
+                    "CREATE INDEX IF NOT EXISTS idx_fde_chat_user_day ON fde_chat(user_id, day_number, created_at)"
+                ).execute(&pool).await.expect("Failed to create fde_chat index");
+
                 app.manage(AppState { db: pool });
             });
 

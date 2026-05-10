@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { FinanceData } from "@/types";
 
 interface Props {
@@ -20,10 +20,14 @@ const FIELDS: { key: keyof FinanceData; label: string; hint: string }[] = [
 
 export default function CalculatorForm({ data, onSave }: Props) {
   const [form, setForm] = useState<FinanceData>(data);
+  const [prevData, setPrevData] = useState<FinanceData>(data);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => { setForm(data); }, [data]);
+  if (data !== prevData) {
+    setPrevData(data);
+    setForm(data);
+  }
 
   function handleChange(key: keyof FinanceData, val: string) {
     setForm((prev) => ({ ...prev, [key]: parseFloat(val) || 0 }));
