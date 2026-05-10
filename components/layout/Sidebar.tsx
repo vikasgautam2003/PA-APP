@@ -12,6 +12,7 @@ const NAV = [
   { href: "/prompts",  label: "Prompt Vault", emoji: "✦" },
   { href: "/planner",  label: "Planner",      emoji: "▦" },
   { href: "/fde",      label: "FDE Prep",     emoji: "◆" },
+  { href: "/aws",      label: "AWS SAA-C03",  emoji: "☁" },
   { href: "/finance",  label: "Finance",      emoji: "◎" },
   { href: "/learning-log", label: "Learning Log", emoji: "✐" },
   { href: "/settings",    label: "Settings",     emoji: "⚙" },

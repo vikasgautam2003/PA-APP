@@ -372,6 +372,36 @@ pub fn run() {
                     "CREATE INDEX IF NOT EXISTS idx_fde_chat_user_day ON fde_chat(user_id, day_number, created_at)"
                 ).execute(&pool).await.expect("Failed to create fde_chat index");
 
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS aws_progress (
+                        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id       INTEGER REFERENCES users(id),
+                        day_number    INTEGER NOT NULL,
+                        task_done     INTEGER DEFAULT 0,
+                        section_index INTEGER DEFAULT 0,
+                        notes         TEXT DEFAULT '',
+                        completed_at  DATETIME,
+                        updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, day_number)
+                    )"
+                ).execute(&pool).await.expect("Failed to create aws_progress table");
+
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS aws_chat (
+                        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id     INTEGER REFERENCES users(id),
+                        day_number  INTEGER NOT NULL,
+                        role        TEXT NOT NULL,
+                        content     TEXT NOT NULL,
+                        sources     TEXT DEFAULT '',
+                        created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )"
+                ).execute(&pool).await.expect("Failed to create aws_chat table");
+
+                sqlx::query(
+                    "CREATE INDEX IF NOT EXISTS idx_aws_chat_user_day ON aws_chat(user_id, day_number, created_at)"
+                ).execute(&pool).await.expect("Failed to create aws_chat index");
+
                 app.manage(AppState { db: pool });
             });
 

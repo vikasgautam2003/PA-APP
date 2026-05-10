@@ -190,4 +190,45 @@ html, body {
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+/* ── AWS theme tokens — Orange + Navy ───────── */
+:root {
+  --aws-orange:        #ff9900;
+  --aws-orange-dim:    #cc7a00;
+  --aws-orange-glow:   rgba(255, 153, 0, 0.20);
+  --aws-orange-soft:   rgba(255, 153, 0, 0.10);
+  --aws-navy:          #232f3e;
+  --aws-navy-dark:     #16202c;
+  --aws-blue:          #2074d9;
+  --aws-cyan:          #00b8d4;
+  --aws-pdf-bg:        #0D1117;
+  --aws-pdf-card:      #161B22;
+}
+[data-theme="dark"] {
+  --aws-orange:        #ff9900;
+  --aws-orange-glow:   rgba(255, 153, 0, 0.28);
+  --aws-orange-soft:   rgba(255, 153, 0, 0.14);
+}
+
+/* AWS-specific animations */
+@keyframes aws-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes aws-slide-right {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes aws-pulse-orange {
+  0%, 100% { box-shadow: 0 0 0 0 var(--aws-orange-glow); }
+  50%      { box-shadow: 0 0 0 8px transparent; }
+}
+@keyframes aws-orb-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes aws-orb-halo {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.18); }
+}
+
 

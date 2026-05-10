@@ -4,3 +4,4 @@ export * from "./prompt";
 export * from "./finance";
 export * from "./planner";
 export * from "./fde";
+export * from "./aws";
