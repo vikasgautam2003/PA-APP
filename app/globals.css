@@ -231,4 +231,41 @@ html, body {
   50%      { opacity: 1;   transform: scale(1.18); }
 }
 
+/* ── GitHub Actions theme tokens ───────── */
+:root {
+  --gha-bg:           #0d1117;
+  --gha-bg-elevated:  #161b22;
+  --gha-bg-surface:   #1c2128;
+  --gha-border:       #30363d;
+  --gha-border-mute:  #21262d;
+  --gha-text:         #e6edf3;
+  --gha-text-muted:   #8b949e;
+  --gha-text-faint:   #6e7681;
+  --gha-blue:         #58a6ff;
+  --gha-blue-dim:     #1f6feb;
+  --gha-blue-glow:    rgba(88, 166, 255, 0.22);
+  --gha-blue-soft:    rgba(88, 166, 255, 0.10);
+  --gha-green:        #3fb950;
+  --gha-green-glow:   rgba(63, 185, 80, 0.22);
+  --gha-purple:       #a371f7;
+  --gha-purple-glow:  rgba(163, 113, 247, 0.22);
+  --gha-orange:       #d29922;
+  --gha-red:          #f85149;
+  --gha-cyan:         #39c5cf;
+}
+[data-theme="dark"] {
+  --gha-blue-glow:    rgba(88, 166, 255, 0.28);
+  --gha-blue-soft:    rgba(88, 166, 255, 0.14);
+}
+
+/* GitHub-specific animations */
+@keyframes gha-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes gha-pulse-blue {
+  0%, 100% { box-shadow: 0 0 0 0 var(--gha-blue-glow); }
+  50%      { box-shadow: 0 0 0 8px transparent; }
+}
+
 

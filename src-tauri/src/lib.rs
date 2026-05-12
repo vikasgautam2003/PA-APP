@@ -402,6 +402,34 @@ pub fn run() {
                     "CREATE INDEX IF NOT EXISTS idx_aws_chat_user_day ON aws_chat(user_id, day_number, created_at)"
                 ).execute(&pool).await.expect("Failed to create aws_chat index");
 
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS gha_progress (
+                        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id       INTEGER REFERENCES users(id),
+                        chapter_num   INTEGER NOT NULL,
+                        done          INTEGER DEFAULT 0,
+                        section_index INTEGER DEFAULT 0,
+                        notes         TEXT DEFAULT '',
+                        completed_at  DATETIME,
+                        updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, chapter_num)
+                    )"
+                ).execute(&pool).await.expect("Failed to create gha_progress table");
+
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS git_progress (
+                        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id       INTEGER REFERENCES users(id),
+                        chapter_num   INTEGER NOT NULL,
+                        done          INTEGER DEFAULT 0,
+                        section_index INTEGER DEFAULT 0,
+                        notes         TEXT DEFAULT '',
+                        completed_at  DATETIME,
+                        updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, chapter_num)
+                    )"
+                ).execute(&pool).await.expect("Failed to create git_progress table");
+
                 app.manage(AppState { db: pool });
             });
 
