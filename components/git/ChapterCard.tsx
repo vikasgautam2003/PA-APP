@@ -27,9 +27,9 @@ export default function ChapterCard({
   }, [chapter.num, progress?.notes]);
 
   const done = !!progress?.done;
-  const accent = chapter.accentColor;
-  const accentSoft = `${accent}1a`;
-  const accentBorder = `${accent}55`;
+  const accent = "var(--accent)";
+  const accentSoft = "var(--accent-glow)";
+  const accentBorder = "var(--accent)";
   const isCheatSheet = chapter.kind === "cheatsheet";
 
   return (
@@ -40,7 +40,7 @@ export default function ChapterCard({
         borderRadius: 18,
         overflow: "hidden",
         animation: "gha-fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
-        boxShadow: `0 8px 32px ${accent}22`,
+        boxShadow: `0 8px 32px var(--accent-glow)`,
       }}
     >
       <header style={{
@@ -82,7 +82,7 @@ export default function ChapterCard({
             cursor: "pointer", whiteSpace: "nowrap",
             boxShadow: done
               ? "0 6px 20px rgba(63,185,80,0.35)"
-              : `0 6px 20px ${accent}55`,
+              : `0 6px 20px var(--accent-glow)`,
             transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
             animation: done ? "fde-celebrate 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)" : undefined,
             flexShrink: 0,

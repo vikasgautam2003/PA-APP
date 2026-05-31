@@ -1,0 +1,257 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import type { AiePhase, AiePhaseProgress } from "@/types";
+import PhaseReader from "./PhaseReader";
+
+interface Props {
+  phase: AiePhase;
+  progress: AiePhaseProgress | undefined;
+  onToggleDone: () => void;
+  onSectionChange: (idx: number) => void;
+  onSaveNotes: (notes: string) => void;
+}
+
+export default function PhaseCard({
+  phase,
+  progress,
+  onToggleDone,
+  onSectionChange,
+  onSaveNotes,
+}: Props) {
+  const [notes, setNotes] = useState(progress?.notes ?? "");
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  useEffect(() => {
+    setNotes(progress?.notes ?? "");
+  }, [phase.num, progress?.notes]);
+
+  const special = phase.kind === "capstone" || phase.kind === "appendix";
+  const done = !!progress?.done;
+
+  const doneLabel =
+    phase.kind === "capstone" ? "Mark capstone shipped"
+    : phase.kind === "appendix" ? "Mark reviewed"
+    : "Mark phase done";
+
+  return (
+    <article
+      style={{
+        background: "var(--gha-bg-elevated)",
+        border: "1px solid",
+        borderColor: special ? "var(--gha-purple)" : "var(--gha-border)",
+        borderRadius: 16,
+        overflow: "hidden",
+        animation: "gha-fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+        boxShadow: special ? "0 8px 36px var(--gha-purple-glow)" : "none",
+      }}
+    >
+      {/* Hero */}
+      <header style={{
+        padding: "30px 32px 26px",
+        background: special
+          ? "linear-gradient(135deg, var(--gha-purple-glow) 0%, transparent 75%)"
+          : "linear-gradient(135deg, var(--gha-blue-soft) 0%, transparent 70%)",
+        borderBottom: "1px solid var(--gha-border-mute)",
+        display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 22,
+      }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <p style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            color: special ? "var(--gha-purple)" : "var(--gha-blue)",
+            marginBottom: 10,
+          }}>
+            {phase.kind === "capstone" ? "★ " : phase.kind === "appendix" ? "? " : ""}{phase.phaseLabel}
+          </p>
+          <h2 style={{
+            fontSize: 28, fontWeight: 700,
+            color: "var(--gha-text)",
+            letterSpacing: "-0.022em", lineHeight: 1.15,
+            marginBottom: 8,
+            background: special ? "linear-gradient(135deg, var(--gha-purple), #c694ff)" : "none",
+            WebkitBackgroundClip: special ? "text" : undefined,
+            WebkitTextFillColor: special ? "transparent" : undefined,
+            backgroundClip: special ? "text" : undefined,
+          }}>
+            {phase.title}
+          </h2>
+          {phase.subtitle && (
+            <p style={{ fontSize: 13.5, color: "var(--gha-text-muted)", lineHeight: 1.55 }}>
+              {phase.subtitle}
+            </p>
+          )}
+          {phase.miniProjectTitle && (
+            <p style={{
+              marginTop: 12,
+              fontSize: 11, fontWeight: 600, letterSpacing: "0.04em",
+              color: "var(--gha-green)",
+              padding: "4px 10px",
+              borderRadius: 999,
+              background: "rgba(63, 185, 80, 0.10)",
+              border: "1px solid var(--gha-green)",
+              display: "inline-block",
+            }}>
+              ▸ {phase.miniProjectTitle}
+            </p>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <button
+            onClick={onToggleDone}
+            style={{
+              padding: "11px 22px", borderRadius: 999, border: "none",
+              background: done
+                ? "linear-gradient(135deg, var(--gha-green), #4ade80)"
+                : special
+                ? "linear-gradient(135deg, var(--gha-purple), #c694ff)"
+                : "linear-gradient(135deg, var(--gha-blue), var(--gha-blue-dim))",
+              color: "#fff",
+              fontSize: 12, fontWeight: 700, letterSpacing: "0.04em",
+              cursor: "pointer", whiteSpace: "nowrap",
+              boxShadow: done
+                ? "0 6px 20px var(--gha-green-glow)"
+                : special
+                ? "0 6px 20px var(--gha-purple-glow)"
+                : "0 6px 20px var(--gha-blue-glow)",
+              transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px) scale(1.03)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0) scale(1)"; }}
+          >
+            {done ? "✓ Completed" : doneLabel}
+          </button>
+        </div>
+      </header>
+
+      {/* Body */}
+      <div style={{ padding: "24px 32px 30px", display: "flex", flexDirection: "column", gap: 18 }}>
+        {/* Mini-project */}
+        {phase.miniProjectDesc && (
+          <div style={{
+            padding: "16px 18px",
+            borderRadius: 12,
+            background: "rgba(63, 185, 80, 0.06)",
+            border: "1px solid var(--gha-green)",
+            boxShadow: "0 0 0 3px var(--gha-green-glow)",
+          }}>
+            <p style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: "0.18em",
+              textTransform: "uppercase", color: "var(--gha-green)",
+              marginBottom: 6,
+            }}>
+              ▸ Mini-project{phase.miniProjectTitle ? ` — ${phase.miniProjectTitle}` : ""}
+            </p>
+            <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--gha-text)", marginBottom: phase.miniProjectChecklist?.length ? 12 : 0 }}>
+              {phase.miniProjectDesc}
+            </p>
+            {phase.miniProjectChecklist && phase.miniProjectChecklist.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {phase.miniProjectChecklist.map((item, i) => (
+                  <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
+                    <span style={{ color: "var(--gha-green)", fontSize: 13, marginTop: 1, flexShrink: 0 }}>✓</span>
+                    <p style={{ fontSize: 13, lineHeight: 1.55, color: "var(--gha-text-muted)" }}>{item}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Section reader */}
+        <PhaseReader
+          phase={phase}
+          sectionIndex={progress?.sectionIndex ?? 0}
+          onSectionChange={onSectionChange}
+        />
+
+        {/* Capstone deliverables */}
+        {special && phase.deliverables && phase.deliverables.length > 0 && (
+          <div style={{
+            display: "flex", flexDirection: "column", gap: 12,
+            padding: "20px 22px",
+            borderRadius: 14,
+            background: "var(--gha-purple-glow)",
+            border: "1px solid var(--gha-purple)",
+          }}>
+            <p style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: "0.18em",
+              textTransform: "uppercase", color: "var(--gha-purple)",
+              marginBottom: 4,
+            }}>
+              ★ What you ship
+            </p>
+            {phase.deliverables.map((d, i) => (
+              <div key={i} style={{
+                padding: "14px 16px",
+                borderRadius: 10,
+                background: "var(--gha-bg-elevated)",
+                border: "1px solid var(--gha-border)",
+              }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "var(--gha-purple)", marginBottom: 5 }}>
+                  {d.title}
+                </p>
+                <p style={{ fontSize: 12.5, lineHeight: 1.6, color: "var(--gha-text-muted)" }}>
+                  {d.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Notes */}
+        <div style={{
+          padding: "14px 18px", borderRadius: 12,
+          background: "var(--gha-bg-surface)",
+          border: "1px solid var(--gha-border)",
+        }}>
+          <p style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: "0.18em",
+            textTransform: "uppercase", color: "var(--gha-text-faint)",
+            marginBottom: 8,
+          }}>
+            Notes
+          </p>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="What did you build? What broke? What clicked?"
+            rows={3}
+            style={{
+              width: "100%", padding: "8px 0",
+              border: "none", borderBottom: "1px solid var(--gha-border)",
+              fontSize: 13.5, color: "var(--gha-text)",
+              background: "transparent",
+              outline: "none", resize: "vertical", lineHeight: 1.6,
+              fontFamily: "inherit",
+              transition: "border-color 0.18s",
+            }}
+            onFocus={(e) => { e.target.style.borderBottomColor = "var(--gha-blue)"; }}
+            onBlur={(e) => { e.target.style.borderBottomColor = "var(--gha-border)"; }}
+          />
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+            <button
+              onClick={async () => {
+                setSavingNotes(true);
+                await onSaveNotes(notes);
+                setSavingNotes(false);
+              }}
+              disabled={savingNotes}
+              style={{
+                padding: "6px 14px", borderRadius: 999,
+                border: "1px solid var(--gha-border)",
+                background: "transparent",
+                fontSize: 11, fontWeight: 600, letterSpacing: "0.06em",
+                color: savingNotes ? "var(--gha-text-faint)" : "var(--gha-text-muted)",
+                textTransform: "uppercase", cursor: savingNotes ? "not-allowed" : "pointer",
+                transition: "all 0.18s",
+              }}
+            >
+              {savingNotes ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}

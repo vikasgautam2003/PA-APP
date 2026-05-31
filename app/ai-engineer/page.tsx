@@ -2,43 +2,43 @@
 
 import { useMemo } from "react";
 import PageWrapper from "@/components/layout/PageWrapper";
-import ChapterCard from "@/components/gha/ChapterCard";
-import ChapterSidebar from "@/components/gha/ChapterSidebar";
+import PhaseCard from "@/components/ai-engineer/PhaseCard";
+import PhaseSidebar from "@/components/ai-engineer/PhaseSidebar";
 import {
-  useGha,
-  computeGhaOverallProgress,
-  isGhaChapterComplete,
-  findCurrentGhaChapter,
-} from "@/hooks/useGha";
-import { GHA_CHAPTERS, getGhaChapter } from "@/lib/gha-roadmap";
+  useAie,
+  computeAieOverallProgress,
+  isAiePhaseComplete,
+  findCurrentAiePhase,
+} from "@/hooks/useAie";
+import { AIE_PHASES, getAiePhase } from "@/lib/aie-roadmap";
 
-export default function GithubActionsPage() {
+export default function AiEngineerPage() {
   const {
-    selectedChapter,
-    setSelectedChapter,
+    selectedPhase,
+    setSelectedPhase,
     progress,
     isLoading,
     toggleDone,
     setSectionIndex,
     saveNotes,
-  } = useGha();
+  } = useAie();
 
-  const chapter = useMemo(() => getGhaChapter(selectedChapter), [selectedChapter]);
-  const overall = useMemo(() => computeGhaOverallProgress(progress), [progress]);
-  const currentChapter = useMemo(() => findCurrentGhaChapter(progress), [progress]);
+  const phase = useMemo(() => getAiePhase(selectedPhase), [selectedPhase]);
+  const overall = useMemo(() => computeAieOverallProgress(progress), [progress]);
+  const currentPhase = useMemo(() => findCurrentAiePhase(progress), [progress]);
 
-  const idx = GHA_CHAPTERS.findIndex((c) => c.num === selectedChapter);
-  const prev = idx > 0 ? GHA_CHAPTERS[idx - 1].num : null;
-  const next = idx >= 0 && idx < GHA_CHAPTERS.length - 1 ? GHA_CHAPTERS[idx + 1].num : null;
+  const idx = AIE_PHASES.findIndex((p) => p.num === selectedPhase);
+  const prev = idx > 0 ? AIE_PHASES[idx - 1].num : null;
+  const next = idx >= 0 && idx < AIE_PHASES.length - 1 ? AIE_PHASES[idx + 1].num : null;
 
-  const isOnCurrent = selectedChapter === currentChapter;
-  const chapterProgress = progress[selectedChapter];
-  const chapterDone = !!chapter && isGhaChapterComplete(chapter.num, progress);
+  const isOnCurrent = selectedPhase === currentPhase;
+  const phaseProgress = progress[selectedPhase];
+  const phaseDone = !!phase && isAiePhaseComplete(phase.num, progress);
 
   return (
     <PageWrapper
-      title="GitHub Actions"
-      subtitle="9 chapters · Production YAML · CI/CD pipelines that ship"
+      title="AI Engineer"
+      subtitle="12 phases · RAG + Agents + Evals + production · build your own ChatGPT"
       action={
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <div style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: 4 }}>
@@ -46,7 +46,7 @@ export default function GithubActionsPage() {
               fontSize: 9, fontWeight: 700, letterSpacing: "0.18em",
               textTransform: "uppercase", color: "var(--text-faint)",
             }}>
-              Chapter {String(currentChapter).padStart(2, "0")} / {GHA_CHAPTERS.length}
+              {overall.done} / {AIE_PHASES.length} phases
             </span>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
               <span style={{
@@ -64,7 +64,7 @@ export default function GithubActionsPage() {
           </div>
           {!isOnCurrent && (
             <button
-              onClick={() => setSelectedChapter(currentChapter)}
+              onClick={() => setSelectedPhase(currentPhase)}
               style={{
                 padding: "9px 18px", borderRadius: 999, border: "none",
                 fontSize: 11, fontWeight: 700, letterSpacing: "0.06em",
@@ -91,8 +91,8 @@ export default function GithubActionsPage() {
         }}>
           Loading
         </div>
-      ) : !chapter ? (
-        <p style={{ color: "var(--text-muted)" }}>Chapter not found.</p>
+      ) : !phase ? (
+        <p style={{ color: "var(--text-muted)" }}>Phase not found.</p>
       ) : (
         <div style={{
           display: "grid",
@@ -102,10 +102,10 @@ export default function GithubActionsPage() {
           maxWidth: 1280, margin: "0 auto",
         }}>
           <aside style={{ position: "sticky", top: 4 }}>
-            <ChapterSidebar
-              selectedChapter={selectedChapter}
+            <PhaseSidebar
+              selectedPhase={selectedPhase}
               progress={progress}
-              onSelect={setSelectedChapter}
+              onSelect={setSelectedPhase}
             />
           </aside>
 
@@ -115,69 +115,63 @@ export default function GithubActionsPage() {
               padding: "0 4px",
             }}>
               <button
-                onClick={() => prev && setSelectedChapter(prev)}
+                onClick={() => prev && setSelectedPhase(prev)}
                 disabled={!prev}
-                style={{
-                  padding: "6px 12px", borderRadius: 999,
-                  border: "1px solid var(--border)",
-                  background: "transparent",
-                  fontSize: 11, fontWeight: 600, letterSpacing: "0.04em",
-                  cursor: prev ? "pointer" : "not-allowed",
-                  color: prev ? "var(--text-secondary)" : "var(--text-faint)",
-                  fontVariantNumeric: "tabular-nums",
-                  transition: "all 0.2s",
-                  opacity: prev ? 1 : 0.5,
-                }}
+                style={navBtn(!!prev)}
               >
-                ← Ch {prev ? String(prev).padStart(2, "0") : "—"}
+                ← {prev ? AIE_PHASES.find((p) => p.num === prev)?.phaseLabel : "—"}
               </button>
               <div style={{
                 display: "flex", alignItems: "center", gap: 8,
                 fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase",
               }}>
-                {selectedChapter === currentChapter ? (
+                {selectedPhase === currentPhase ? (
                   <span style={{
                     color: "#fff", padding: "4px 12px", borderRadius: 999,
                     background: "linear-gradient(135deg, var(--accent), #7c3aed)",
                     boxShadow: "0 0 16px var(--accent-glow)",
                   }}>● Current</span>
-                ) : chapterDone ? (
+                ) : phaseDone ? (
                   <span style={{ color: "var(--easy)" }}>
-                    ✓ Done{chapterProgress?.completedAt ? ` · ${new Date(chapterProgress.completedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : ""}
+                    ✓ Done{phaseProgress?.completedAt ? ` · ${new Date(phaseProgress.completedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : ""}
                   </span>
                 ) : (
                   <span style={{ color: "var(--text-faint)" }}>○ Pending</span>
                 )}
               </div>
               <button
-                onClick={() => next && setSelectedChapter(next)}
+                onClick={() => next && setSelectedPhase(next)}
                 disabled={!next}
-                style={{
-                  padding: "6px 12px", borderRadius: 999,
-                  border: "1px solid var(--border)",
-                  background: "transparent",
-                  fontSize: 11, fontWeight: 600, letterSpacing: "0.04em",
-                  cursor: next ? "pointer" : "not-allowed",
-                  color: next ? "var(--text-secondary)" : "var(--text-faint)",
-                  fontVariantNumeric: "tabular-nums",
-                  transition: "all 0.2s",
-                  opacity: next ? 1 : 0.5,
-                }}
+                style={navBtn(!!next)}
               >
-                Ch {next ? String(next).padStart(2, "0") : "—"} →
+                {next ? AIE_PHASES.find((p) => p.num === next)?.phaseLabel : "—"} →
               </button>
             </div>
 
-            <ChapterCard
-              chapter={chapter}
-              progress={chapterProgress}
-              onToggleDone={() => void toggleDone(chapter.num)}
-              onSectionChange={(i) => void setSectionIndex(chapter.num, i)}
-              onSaveNotes={(notes) => void saveNotes(chapter.num, notes)}
+            <PhaseCard
+              phase={phase}
+              progress={phaseProgress}
+              onToggleDone={() => void toggleDone(phase.num)}
+              onSectionChange={(i) => void setSectionIndex(phase.num, i)}
+              onSaveNotes={(notes) => void saveNotes(phase.num, notes)}
             />
           </div>
         </div>
       )}
     </PageWrapper>
   );
+}
+
+function navBtn(enabled: boolean): React.CSSProperties {
+  return {
+    padding: "6px 12px", borderRadius: 999,
+    border: "1px solid var(--border)",
+    background: "transparent",
+    fontSize: 11, fontWeight: 600, letterSpacing: "0.04em",
+    cursor: enabled ? "pointer" : "not-allowed",
+    color: enabled ? "var(--text-secondary)" : "var(--text-faint)",
+    fontVariantNumeric: "tabular-nums",
+    transition: "all 0.2s",
+    opacity: enabled ? 1 : 0.5,
+  };
 }

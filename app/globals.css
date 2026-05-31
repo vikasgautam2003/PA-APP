@@ -190,23 +190,25 @@ html, body {
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* ── AWS theme tokens — Orange + Navy ───────── */
+/* ── AWS theme tokens — Learning Hub normalises these to app theme ───────── */
 :root {
-  --aws-orange:        #ff9900;
-  --aws-orange-dim:    #cc7a00;
-  --aws-orange-glow:   rgba(255, 153, 0, 0.20);
-  --aws-orange-soft:   rgba(255, 153, 0, 0.10);
+  /* All accent vars now resolve to the app accent — no orange chrome */
+  --aws-orange:        var(--accent);
+  --aws-orange-dim:    var(--accent);
+  --aws-orange-glow:   var(--accent-glow);
+  --aws-orange-soft:   var(--accent-glow);
+  --aws-blue:          var(--accent);
+  --aws-cyan:          var(--accent);
+  /* Code-block background stays dark for readability across themes */
   --aws-navy:          #232f3e;
   --aws-navy-dark:     #16202c;
-  --aws-blue:          #2074d9;
-  --aws-cyan:          #00b8d4;
   --aws-pdf-bg:        #0D1117;
   --aws-pdf-card:      #161B22;
 }
 [data-theme="dark"] {
-  --aws-orange:        #ff9900;
-  --aws-orange-glow:   rgba(255, 153, 0, 0.28);
-  --aws-orange-soft:   rgba(255, 153, 0, 0.14);
+  --aws-orange:        var(--accent);
+  --aws-orange-glow:   var(--accent-glow);
+  --aws-orange-soft:   var(--accent-glow);
 }
 
 /* AWS-specific animations */
@@ -231,31 +233,87 @@ html, body {
   50%      { opacity: 1;   transform: scale(1.18); }
 }
 
-/* ── GitHub Actions theme tokens ───────── */
+/* ── GitHub Actions / Git theme tokens — Learning Hub normalises to app theme ───────── */
 :root {
-  --gha-bg:           #0d1117;
-  --gha-bg-elevated:  #161b22;
-  --gha-bg-surface:   #1c2128;
-  --gha-border:       #30363d;
-  --gha-border-mute:  #21262d;
-  --gha-text:         #e6edf3;
-  --gha-text-muted:   #8b949e;
-  --gha-text-faint:   #6e7681;
-  --gha-blue:         #58a6ff;
-  --gha-blue-dim:     #1f6feb;
-  --gha-blue-glow:    rgba(88, 166, 255, 0.22);
-  --gha-blue-soft:    rgba(88, 166, 255, 0.10);
-  --gha-green:        #3fb950;
-  --gha-green-glow:   rgba(63, 185, 80, 0.22);
-  --gha-purple:       #a371f7;
-  --gha-purple-glow:  rgba(163, 113, 247, 0.22);
-  --gha-orange:       #d29922;
-  --gha-red:          #f85149;
-  --gha-cyan:         #39c5cf;
+  --gha-bg:           var(--bg-base);
+  --gha-bg-elevated:  var(--bg-elevated);
+  --gha-bg-surface:   var(--bg-surface);
+  --gha-border:       var(--border);
+  --gha-border-mute:  var(--border-subtle);
+  --gha-text:         var(--text-primary);
+  --gha-text-muted:   var(--text-muted);
+  --gha-text-faint:   var(--text-faint);
+  --gha-blue:         var(--accent);
+  --gha-blue-dim:     var(--accent);
+  --gha-blue-glow:    var(--accent-glow);
+  --gha-blue-soft:    var(--accent-glow);
+  --gha-green:        var(--easy);
+  --gha-green-glow:   var(--easy-bg);
+  --gha-purple:       var(--accent);
+  --gha-purple-glow:  var(--accent-glow);
+  --gha-orange:       var(--medium);
+  --gha-red:          var(--hard);
+  --gha-cyan:         var(--accent);
 }
-[data-theme="dark"] {
-  --gha-blue-glow:    rgba(88, 166, 255, 0.28);
-  --gha-blue-soft:    rgba(88, 166, 255, 0.14);
+
+/* ── Per-course brand themes — applied only inside the course modal ───────── */
+/* Each class scope re-defines --accent so the course content (which uses
+   var(--accent) everywhere) picks up the brand colour automatically.        */
+
+/* AWS — orange + navy */
+.course-theme-aws {
+  --accent:        #FF9900;
+  --accent-text:   #FF9900;
+  --accent-glow:   rgba(255, 153, 0, 0.22);
+  --course-brand:        #FF9900;
+  --course-brand-dim:    #E48700;
+  --course-brand-bg:     #232F3E;
+  --course-brand-bg-2:   #16202C;
+}
+[data-theme="dark"] .course-theme-aws {
+  --accent-glow:   rgba(255, 153, 0, 0.30);
+}
+
+/* GitHub Actions — success-green + dark navy (distinct from the GitHub
+   primer blue used by the Git & GitHub course) */
+.course-theme-github-actions {
+  --accent:        #3FB950;
+  --accent-text:   #3FB950;
+  --accent-glow:   rgba(63, 185, 80, 0.22);
+  --course-brand:        #3FB950;
+  --course-brand-dim:    #2EA043;
+  --course-brand-bg:     #0D1117;
+  --course-brand-bg-2:   #161B22;
+}
+[data-theme="dark"] .course-theme-github-actions {
+  --accent:        #56D364;
+  --accent-text:   #56D364;
+  --accent-glow:   rgba(86, 211, 100, 0.30);
+}
+
+/* Git & GitHub — GitHub Primer blue + dark navy */
+.course-theme-git-github {
+  --accent:        #2188FF;
+  --accent-text:   #2188FF;
+  --accent-glow:   rgba(33, 136, 255, 0.22);
+  --course-brand:        #2188FF;
+  --course-brand-dim:    #1F6FEB;
+  --course-brand-bg:     #0D1117;
+  --course-brand-bg-2:   #161B22;
+}
+[data-theme="dark"] .course-theme-git-github {
+  --accent:        #58A6FF;
+  --accent-text:   #58A6FF;
+  --accent-glow:   rgba(88, 166, 255, 0.30);
+}
+
+/* FDE — keeps the app's purple-blue gradient; no override needed.
+   Brand bg vars set for the card hero, however.                              */
+.course-theme-ai-engineer {
+  --course-brand:        #A855F7;
+  --course-brand-dim:    #7c3aed;
+  --course-brand-bg:     #140B1E;
+  --course-brand-bg-2:   #221033;
 }
 
 /* GitHub-specific animations */

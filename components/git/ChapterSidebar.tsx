@@ -74,19 +74,19 @@ export default function ChapterSidebar({ selectedChapter, progress, onSelect }: 
                 padding: "12px 14px",
                 borderRadius: 12,
                 border: "1px solid",
-                borderColor: isSelected ? c.accentColor : "var(--gha-border)",
+                borderColor: isSelected ? "var(--accent)" : "var(--gha-border)",
                 background: isSelected
-                  ? `linear-gradient(135deg, ${c.accentColor}26 0%, var(--gha-bg-elevated) 70%)`
+                  ? `linear-gradient(135deg, var(--accent-glow) 0%, var(--gha-bg-elevated) 70%)`
                   : "var(--gha-bg-elevated)",
                 cursor: "pointer",
                 textAlign: "left",
                 transition: "all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                boxShadow: isSelected ? `0 4px 14px ${c.accentColor}33` : "none",
+                boxShadow: isSelected ? `0 4px 14px var(--accent-glow)` : "none",
                 animation: `gha-fade-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) ${i * 35}ms backwards`,
               }}
               onMouseEnter={(e) => {
                 if (!isSelected) {
-                  e.currentTarget.style.borderColor = c.accentColor;
+                  e.currentTarget.style.borderColor = "var(--accent)";
                   e.currentTarget.style.transform = "translateX(2px)";
                 }
               }}
@@ -103,17 +103,17 @@ export default function ChapterSidebar({ selectedChapter, progress, onSelect }: 
                 background: done
                   ? "linear-gradient(135deg, var(--gha-green), #56d364)"
                   : isSelected
-                    ? c.accentColor
+                    ? "var(--accent)"
                     : "var(--gha-bg-surface)",
-                border: `1px solid ${done ? "transparent" : isSelected ? c.accentColor : "var(--gha-border)"}`,
-                color: done || isSelected ? "#fff" : c.accentColor,
+                border: `1px solid ${done ? "transparent" : isSelected ? "var(--accent)" : "var(--gha-border)"}`,
+                color: done || isSelected ? "#fff" : "var(--accent)",
                 fontSize: 11, fontWeight: 700,
                 fontVariantNumeric: "tabular-nums",
                 flexShrink: 0,
                 boxShadow: done
                   ? "0 2px 8px rgba(63,185,80,0.35)"
                   : isSelected
-                    ? `0 2px 8px ${c.accentColor}55`
+                    ? `0 2px 8px var(--accent-glow)`
                     : "none",
               }}>
                 {done ? "✓" : isCheatSheet ? "★" : String(c.num).padStart(2, "0")}
@@ -121,7 +121,7 @@ export default function ChapterSidebar({ selectedChapter, progress, onSelect }: 
               <div style={{ minWidth: 0, flex: 1 }}>
                 <p style={{
                   fontSize: 9, fontWeight: 700, letterSpacing: "0.16em",
-                  color: isSelected ? c.accentColor : "var(--text-faint)",
+                  color: isSelected ? "var(--accent)" : "var(--text-faint)",
                   textTransform: "uppercase",
                   marginBottom: 3,
                 }}>

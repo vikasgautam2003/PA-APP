@@ -27,9 +27,9 @@ export default function LessonReader({ chapter, sectionIndex, onSectionChange }:
 
   const meta = TONE_META[section.tone];
   const pct = total > 0 ? Math.round(((idx + 1) / total) * 100) : 0;
-  const accent = chapter.accentColor;
-  const accentSoft = `${accent}1a`;
-  const accentBorder = `${accent}55`;
+  const accent = "var(--accent)";
+  const accentSoft = "var(--accent-glow)";
+  const accentBorder = "var(--accent)";
 
   return (
     <div style={{
@@ -44,7 +44,7 @@ export default function LessonReader({ chapter, sectionIndex, onSectionChange }:
           height: "100%", width: `${pct}%`,
           background: `linear-gradient(90deg, ${accent}, var(--gha-cyan))`,
           transition: "width 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
-          boxShadow: `0 0 10px ${accent}66`,
+          boxShadow: `0 0 10px var(--accent-glow)`,
         }} />
       </div>
 
@@ -336,7 +336,7 @@ export default function LessonReader({ chapter, sectionIndex, onSectionChange }:
             color: idx >= total - 1 ? "var(--gha-text-faint)" : "#0d1117",
             fontSize: 12.5, fontWeight: 700, letterSpacing: "0.06em",
             cursor: idx >= total - 1 ? "not-allowed" : "pointer",
-            boxShadow: idx >= total - 1 ? "none" : `0 6px 18px ${accent}55`,
+            boxShadow: idx >= total - 1 ? "none" : `0 6px 18px var(--accent-glow)`,
             transition: "all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
           onMouseEnter={(e) => {
@@ -388,7 +388,7 @@ function renderInline(text: string, accent: string): React.ReactNode {
           <code key={`c-${lineIdx}-${i++}`} style={{
             fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
             fontSize: "0.92em",
-            background: `${accent}1a`,
+            background: "var(--accent-glow)",
             color: accent,
             padding: "1.5px 6px",
             borderRadius: 5,

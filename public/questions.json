@@ -8998,5 +8998,707 @@
     "link": "https://leetcode.com/problems/keep-multiplying-found-values-by",
     "companies": "Amazon",
     "notes": ""
+  },
+  {
+    "id": 1001,
+    "title": "Encode and Decode Strings",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/encode-and-decode-strings",
+    "companies": "Google, Amazon, Facebook",
+    "notes": ""
+  },
+  {
+    "id": 1002,
+    "title": "Intersection of Two Arrays",
+    "topic": "HashMaps",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/intersection-of-two-arrays",
+    "companies": "Amazon, Google, Facebook, Microsoft",
+    "notes": ""
+  },
+  {
+    "id": 1003,
+    "title": "Two Sum III - Data structure design",
+    "topic": "HashMaps",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/two-sum-iii-data-structure-design",
+    "companies": "Facebook, LinkedIn",
+    "notes": ""
+  },
+  {
+    "id": 1004,
+    "title": "Logger Rate Limiter",
+    "topic": "HashMaps",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/logger-rate-limiter",
+    "companies": "Google, Facebook",
+    "notes": ""
+  },
+  {
+    "id": 1005,
+    "title": "Longest Subarray with Sum K",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/maximum-size-subarray-sum-equals-k",
+    "companies": "Facebook, Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1006,
+    "title": "Four Sum",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/4sum",
+    "companies": "Amazon, Adobe, Microsoft",
+    "notes": ""
+  },
+  {
+    "id": 1007,
+    "title": "Number of Boomerangs",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/number-of-boomerangs",
+    "companies": "Google",
+    "notes": ""
+  },
+  {
+    "id": 1008,
+    "title": "Find Duplicate File in System",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/find-duplicate-file-in-system",
+    "companies": "Dropbox, Uber, Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1009,
+    "title": "Longest Palindrome",
+    "topic": "HashMaps",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/longest-palindrome",
+    "companies": "Google, Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1010,
+    "title": "Degree of an Array",
+    "topic": "HashMaps",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/degree-of-an-array",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1011,
+    "title": "Subdomain Visit Count",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/subdomain-visit-count",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1012,
+    "title": "Find and Replace Pattern",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/find-and-replace-pattern",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1013,
+    "title": "Shortest Word Distance II",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/shortest-word-distance-ii",
+    "companies": "LinkedIn, Google",
+    "notes": ""
+  },
+  {
+    "id": 1014,
+    "title": "Majority Element",
+    "topic": "HashMaps",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/majority-element",
+    "companies": "Amazon, Google, Apple, Bloomberg",
+    "notes": ""
+  },
+  {
+    "id": 1015,
+    "title": "Majority Element II",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/majority-element-ii",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1016,
+    "title": "Sort Characters By Frequency",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/sort-characters-by-frequency",
+    "companies": "Amazon, Facebook, Google",
+    "notes": ""
+  },
+  {
+    "id": 1017,
+    "title": "Brick Wall",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/brick-wall",
+    "companies": "Facebook, Google",
+    "notes": ""
+  },
+  {
+    "id": 1018,
+    "title": "Number of Pairs of Interchangeable Rectangles",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/number-of-pairs-of-interchangeable-rectangles",
+    "companies": "Google, Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1019,
+    "title": "Pairs of Songs With Total Durations Divisible by 60",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/pairs-of-songs-with-total-durations-divisible-by-60",
+    "companies": "Amazon, Spotify",
+    "notes": ""
+  },
+  {
+    "id": 1020,
+    "title": "Check if Array Pairs Are Divisible by k",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/check-if-array-pairs-are-divisible-by-k",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1021,
+    "title": "Number of Subarrays with Bounded Maximum",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/number-of-subarrays-with-bounded-maximum",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1022,
+    "title": "K-diff Pairs in an Array",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/k-diff-pairs-in-an-array",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1023,
+    "title": "Count Number of Nice Subarrays",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/count-number-of-nice-subarrays",
+    "companies": "Google, Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1024,
+    "title": "Equal Row and Column Pairs",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/equal-row-and-column-pairs",
+    "companies": "Google, Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1025,
+    "title": "Longest Well-Performing Interval",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/longest-well-performing-interval",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1026,
+    "title": "Hand of Straights",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/hand-of-straights",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1027,
+    "title": "Divide Array in Sets of K Consecutive Numbers",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/divide-array-in-sets-of-k-consecutive-numbers",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1028,
+    "title": "Longest Arithmetic Subsequence",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/longest-arithmetic-subsequence",
+    "companies": "Amazon, Google, Microsoft",
+    "notes": ""
+  },
+  {
+    "id": 1029,
+    "title": "Number of Good Pairs",
+    "topic": "HashMaps",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/number-of-good-pairs",
+    "companies": "Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1030,
+    "title": "Number of Subarrays with Sum Equals K",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/subarray-sum-equals-k",
+    "companies": "Facebook, Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1031,
+    "title": "Minimum Index Sum of Two Lists",
+    "topic": "HashMaps",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/minimum-index-sum-of-two-lists",
+    "companies": "Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1032,
+    "title": "Repeated DNA Sequences",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/repeated-dna-sequences",
+    "companies": "LinkedIn, Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1033,
+    "title": "N-th Tribonacci Number",
+    "topic": "HashMaps",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/n-th-tribonacci-number",
+    "companies": "Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1034,
+    "title": "Word Frequency (HashMap + Sorting)",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/top-k-frequent-words",
+    "companies": "Amazon, Google, Bloomberg",
+    "notes": ""
+  },
+  {
+    "id": 1035,
+    "title": "Find Subarrays With Equal Sum",
+    "topic": "HashMaps",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/find-subarrays-with-equal-sum",
+    "companies": "Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1036,
+    "title": "Count Pairs Whose Sum is Less than Target",
+    "topic": "HashMaps",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/count-pairs-whose-sum-is-less-than-target",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1037,
+    "title": "Checking Existence of Edge Length Limited Paths",
+    "topic": "HashMaps",
+    "difficulty": "Hard",
+    "link": "https://leetcode.com/problems/checking-existence-of-edge-length-limited-paths",
+    "companies": "Google, Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1038,
+    "title": "Insert Delete GetRandom O(1) - Duplicates allowed",
+    "topic": "HashMaps",
+    "difficulty": "Hard",
+    "link": "https://leetcode.com/problems/insert-delete-getrandom-o1-duplicates-allowed",
+    "companies": "Amazon, Facebook",
+    "notes": ""
+  },
+  {
+    "id": 1039,
+    "title": "Number of Distinct Islands",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/number-of-distinct-islands",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1040,
+    "title": "Sentence Similarity",
+    "topic": "HashMaps",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/sentence-similarity",
+    "companies": "Google",
+    "notes": ""
+  },
+  {
+    "id": 1041,
+    "title": "Subarrays with K Different Integers",
+    "topic": "HashMaps",
+    "difficulty": "Hard",
+    "link": "https://leetcode.com/problems/subarrays-with-k-different-integers",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1042,
+    "title": "Tuple with Same Product",
+    "topic": "HashMaps",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/tuple-with-same-product",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1043,
+    "title": "Zigzag Conversion",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/zigzag-conversion",
+    "companies": "Amazon, Bloomberg",
+    "notes": ""
+  },
+  {
+    "id": 1044,
+    "title": "Word Break II",
+    "topic": "Strings",
+    "difficulty": "Hard",
+    "link": "https://leetcode.com/problems/word-break-ii",
+    "companies": "Amazon, Google, Facebook, Bloomberg",
+    "notes": ""
+  },
+  {
+    "id": 1045,
+    "title": "Add Binary",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/add-binary",
+    "companies": "Facebook, Amazon, Google, Apple",
+    "notes": ""
+  },
+  {
+    "id": 1046,
+    "title": "Compare Version Numbers",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/compare-version-numbers",
+    "companies": "Apple, Amazon, Microsoft",
+    "notes": ""
+  },
+  {
+    "id": 1047,
+    "title": "Integer to Roman",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/integer-to-roman",
+    "companies": "Amazon, Bloomberg, Facebook",
+    "notes": ""
+  },
+  {
+    "id": 1048,
+    "title": "Simplify Path",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/simplify-path",
+    "companies": "Facebook, Amazon, Google, Microsoft",
+    "notes": ""
+  },
+  {
+    "id": 1049,
+    "title": "Scramble String",
+    "topic": "Strings",
+    "difficulty": "Hard",
+    "link": "https://leetcode.com/problems/scramble-string",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1050,
+    "title": "Longest Palindrome by Concatenating Two Letter Words",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/longest-palindrome-by-concatenating-two-letter-words",
+    "companies": "Google, Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1051,
+    "title": "Check if Strings Can Be Made Equal With Operations",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/check-if-strings-can-be-made-equal-with-operations",
+    "companies": "Google, Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1052,
+    "title": "Reverse String II",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/reverse-string-ii",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1053,
+    "title": "Student Attendance Record I",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/student-attendance-record-i",
+    "companies": "Google",
+    "notes": ""
+  },
+  {
+    "id": 1054,
+    "title": "Detect Capital",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/detect-capital",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1055,
+    "title": "Longest Uncommon Subsequence I",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/longest-uncommon-subsequence-i",
+    "companies": "Google",
+    "notes": ""
+  },
+  {
+    "id": 1056,
+    "title": "Longest Uncommon Subsequence II",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/longest-uncommon-subsequence-ii",
+    "companies": "Google",
+    "notes": ""
+  },
+  {
+    "id": 1057,
+    "title": "Reverse Words in a String III",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/reverse-words-in-a-string-iii",
+    "companies": "Facebook, Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1058,
+    "title": "Maximum Number of Vowels in a Substring of Given Length",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/maximum-number-of-vowels-in-a-substring-of-given-length",
+    "companies": "Google, Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1059,
+    "title": "Check if a String Contains All Binary Codes of Size K",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/check-if-a-string-contains-all-binary-codes-of-size-k",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1060,
+    "title": "Longest Substring with At Least K Repeating Characters",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/longest-substring-with-at-least-k-repeating-characters",
+    "companies": "Facebook, Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1061,
+    "title": "Longest Substring with At Most Two Distinct Characters",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/longest-substring-with-at-most-two-distinct-characters",
+    "companies": "Facebook, Google",
+    "notes": ""
+  },
+  {
+    "id": 1062,
+    "title": "Longest Substring with At Most K Distinct Characters",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/longest-substring-with-at-most-k-distinct-characters",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1063,
+    "title": "Encode and Decode TinyURL",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/encode-and-decode-tinyurl",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1064,
+    "title": "Optimal Division",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/optimal-division",
+    "companies": "Google",
+    "notes": ""
+  },
+  {
+    "id": 1065,
+    "title": "Bold Words in String",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/bold-words-in-string",
+    "companies": "Google",
+    "notes": ""
+  },
+  {
+    "id": 1066,
+    "title": "Shifting Letters",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/shifting-letters",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1067,
+    "title": "Reorder Log Files",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/reorder-data-in-log-files",
+    "companies": "Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1068,
+    "title": "Goat Latin",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/goat-latin",
+    "companies": "Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1069,
+    "title": "Buddy Strings",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/buddy-strings",
+    "companies": "Amazon, Google",
+    "notes": ""
+  },
+  {
+    "id": 1070,
+    "title": "Flip Game",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/flip-game",
+    "companies": "Google",
+    "notes": ""
+  },
+  {
+    "id": 1071,
+    "title": "Sentence Screen Fitting",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/sentence-screen-fitting",
+    "companies": "Google",
+    "notes": ""
+  },
+  {
+    "id": 1072,
+    "title": "String Compression",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/string-compression",
+    "companies": "Bloomberg, Amazon, Microsoft",
+    "notes": ""
+  },
+  {
+    "id": 1073,
+    "title": "Thousand Separator",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/thousand-separator",
+    "companies": "Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1074,
+    "title": "Truncate Sentence",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/truncate-sentence",
+    "companies": "Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1075,
+    "title": "Number of Different Integers in a String",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/number-of-different-integers-in-a-string",
+    "companies": "Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1076,
+    "title": "Count Substrings That Differ by One Character",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/count-substrings-that-differ-by-one-character",
+    "companies": "Google, Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1077,
+    "title": "Minimum Deletions to Make Character Frequencies Unique",
+    "topic": "Strings",
+    "difficulty": "Medium",
+    "link": "https://leetcode.com/problems/minimum-deletions-to-make-character-frequencies-unique",
+    "companies": "Google, Amazon",
+    "notes": ""
+  },
+  {
+    "id": 1078,
+    "title": "Number of Strings Containing Only One Distinct Letter",
+    "topic": "Strings",
+    "difficulty": "Easy",
+    "link": "https://leetcode.com/problems/number-of-strings-containing-only-one-distinct-letter",
+    "companies": "Amazon",
+    "notes": ""
   }
 ]

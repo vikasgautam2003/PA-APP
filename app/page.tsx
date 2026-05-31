@@ -10,7 +10,6 @@ import { useGmail } from "@/hooks/useGmail";
 import { useCalendar } from "@/hooks/useCalendar";
 import { useSettingsStore } from "@/store/settingsStore";
 import TaskCheckbox from "@/components/planner/TaskCheckbox";
-import FdeDashboardCard from "@/components/fde/DashboardCard";
 import type { DayPlanItem } from "@/types";
 import type { CalendarEvent } from "@/lib/calendar";
 import type { GmailMessage } from "@/lib/gmail";
@@ -56,9 +55,6 @@ export default function DashboardPage() {
   const { emails: gmailEmails, loading: gmailLoading, error: gmailError, refetch: refetchGmail } = useGmail();
   const { events: calEvents, loading: calLoading, noScope: calNoScope, isRefreshing: calRefreshing, refetch: refetchCal } = useCalendar();
   const { gmailToken, notifEnabled, notifMeetingAlert, notifDsaNudgeTime, notifBriefTime } = useSettingsStore();
-  const [todayMode, setTodayMode] = useState<"planner" | "fde">(() => {
-    try { return (localStorage.getItem("ares-today-mode") as "planner" | "fde") ?? "planner"; } catch { return "planner"; }
-  });
   const [brief, setBrief]         = useState<string>(() => {
     try { return localStorage.getItem("ares-brief-text") ?? ""; } catch { return ""; }
   });
@@ -357,34 +353,6 @@ Write today's brief.`;
         {/* Left — Today's tasks + AI brief */}
         <div style={{ overflowY: "auto", padding: "32px 40px", borderRight: "1px solid var(--border)" }}>
 
-          {/* Mode toggle (Planner ↔ FDE Prep) */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: 1,
-            background: "var(--bg-elevated)", border: "1px solid var(--border)",
-            borderRadius: 10, padding: 3, width: "fit-content", marginBottom: 18,
-          }}>
-            {([
-              { id: "planner", label: "▦  Today's Plan" },
-              { id: "fde",     label: "◆  FDE Prep" },
-            ] as const).map(({ id, label }) => (
-              <button key={id} onClick={() => {
-                setTodayMode(id);
-                try { localStorage.setItem("ares-today-mode", id); } catch {}
-              }} style={{
-                padding: "7px 14px", borderRadius: 7, fontSize: 12,
-                fontWeight: todayMode === id ? 600 : 500,
-                cursor: "pointer", border: "none",
-                background: todayMode === id ? "var(--bg-surface)" : "transparent",
-                color: todayMode === id ? "var(--text-primary)" : "var(--text-muted)",
-                boxShadow: todayMode === id ? "var(--shadow-card)" : "none",
-                transition: "all 0.12s",
-              }}>{label}</button>
-            ))}
-          </div>
-
-          {todayMode === "fde" ? (
-            <FdeDashboardCard />
-          ) : (
           <>
           {/* Section header */}
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 24 }}>
@@ -496,7 +464,6 @@ Write today's brief.`;
             </div>
           )}
           </>
-          )}
 
           {/* AI Brief */}
           <div style={{

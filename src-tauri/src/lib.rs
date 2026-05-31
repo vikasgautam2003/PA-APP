@@ -430,6 +430,20 @@ pub fn run() {
                     )"
                 ).execute(&pool).await.expect("Failed to create git_progress table");
 
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS ai_engineer_progress (
+                        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id       INTEGER REFERENCES users(id),
+                        phase_num     INTEGER NOT NULL,
+                        done          INTEGER DEFAULT 0,
+                        section_index INTEGER DEFAULT 0,
+                        notes         TEXT DEFAULT '',
+                        completed_at  DATETIME,
+                        updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, phase_num)
+                    )"
+                ).execute(&pool).await.expect("Failed to create ai_engineer_progress table");
+
                 app.manage(AppState { db: pool });
             });
 

@@ -1,6 +1,6 @@
 import { useSettingsStore } from "@/store/settingsStore";
 import type {
-  FdeChatSources, FdeWebResult, FdeImageResult, FdeVideoResult,
+  AwsChatSources, AwsWebResult, AwsImageResult, AwsVideoResult,
 } from "@/types";
 
 const SERP_URL = "https://serpapi.com/search.json";

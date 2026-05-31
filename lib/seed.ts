@@ -21,13 +21,25 @@ export async function seedDSAQuestions(): Promise<void> {
     }
     console.log(`Seeded ${questions.length} DSA questions`);
   } else {
-    // Existing install — patch companies for rows that don't have it yet
+    // Existing install — insert any new IDs, patch companies for older rows missing it
+    const existing = await db.select<{ id: number }[]>("SELECT id FROM dsa_questions");
+    const existingIds = new Set(existing.map((r) => r.id));
+    let inserted = 0;
     for (const q of questions) {
-      await db.execute(
-        `UPDATE dsa_questions SET companies = ? WHERE id = ? AND (companies IS NULL OR companies = '')`,
-        [q.companies ?? "", q.id]
-      );
+      if (existingIds.has(q.id)) {
+        await db.execute(
+          `UPDATE dsa_questions SET companies = ? WHERE id = ? AND (companies IS NULL OR companies = '')`,
+          [q.companies ?? "", q.id]
+        );
+      } else {
+        await db.execute(
+          `INSERT INTO dsa_questions (id, title, topic, difficulty, link, notes, companies)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [q.id, q.title, q.topic, q.difficulty, q.link ?? "", q.notes ?? "", q.companies ?? ""]
+        );
+        inserted++;
+      }
     }
-    console.log(`Patched companies for existing DSA questions`);
+    console.log(`Patched companies + inserted ${inserted} new DSA questions`);
   }
 }
