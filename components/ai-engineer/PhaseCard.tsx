@@ -10,6 +10,7 @@ interface Props {
   onToggleDone: () => void;
   onSectionChange: (idx: number) => void;
   onSaveNotes: (notes: string) => void;
+  unitNoun?: string;
 }
 
 export default function PhaseCard({
@@ -18,6 +19,7 @@ export default function PhaseCard({
   onToggleDone,
   onSectionChange,
   onSaveNotes,
+  unitNoun = "phase",
 }: Props) {
   const [notes, setNotes] = useState(progress?.notes ?? "");
   const [savingNotes, setSavingNotes] = useState(false);
@@ -32,7 +34,7 @@ export default function PhaseCard({
   const doneLabel =
     phase.kind === "capstone" ? "Mark capstone shipped"
     : phase.kind === "appendix" ? "Mark reviewed"
-    : "Mark phase done";
+    : `Mark ${unitNoun} done`;
 
   return (
     <article

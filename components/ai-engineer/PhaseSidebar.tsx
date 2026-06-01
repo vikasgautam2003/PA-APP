@@ -1,16 +1,26 @@
 "use client";
 
-import { AIE_PHASES } from "@/lib/aie-roadmap";
-import { isAiePhaseComplete } from "@/hooks/useAie";
-import type { AiePhaseProgress } from "@/types";
+import type { AiePhase, AiePhaseProgress } from "@/types";
 
 interface Props {
+  phases: AiePhase[];
   selectedPhase: number;
   progress: Record<number, AiePhaseProgress>;
   onSelect: (n: number) => void;
+  isComplete: (num: number, progress: Record<number, AiePhaseProgress>) => boolean;
+  headerLabel: string;
 }
 
-export default function PhaseSidebar({ selectedPhase, progress, onSelect }: Props) {
+// Badge text for a phase: its number from the label (e.g. "PHASE 0" → "00",
+// "CH 01" → "01"), or an icon for capstone / appendix.
+function badge(p: AiePhase): string {
+  const m = p.phaseLabel.match(/\d+/);
+  return m ? m[0].padStart(2, "0") : "•";
+}
+
+export default function PhaseSidebar({
+  phases, selectedPhase, progress, onSelect, isComplete, headerLabel,
+}: Props) {
   return (
     <div style={{
       display: "flex", flexDirection: "column", gap: 6,
@@ -27,10 +37,10 @@ export default function PhaseSidebar({ selectedPhase, progress, onSelect }: Prop
         borderBottom: "1px solid var(--gha-border-mute)",
         marginBottom: 4,
       }}>
-        12 phases · capstone · appendix
+        {headerLabel}
       </p>
-      {AIE_PHASES.map((p) => {
-        const done = isAiePhaseComplete(p.num, progress);
+      {phases.map((p) => {
+        const done = isComplete(p.num, progress);
         const isSelected = p.num === selectedPhase;
         const isCapstone = p.kind === "capstone";
         const isAppendix = p.kind === "appendix";
@@ -75,7 +85,7 @@ export default function PhaseSidebar({ selectedPhase, progress, onSelect }: Prop
               border: done || isSelected || special ? "1px solid transparent" : "1px solid var(--gha-border)",
               transition: "all 0.18s",
             }}>
-              {done ? "✓" : isCapstone ? "★" : isAppendix ? "?" : String(p.num - 1).padStart(2, "0")}
+              {done ? "✓" : isCapstone ? "★" : isAppendix ? "?" : badge(p)}
             </span>
             <div style={{ minWidth: 0, flex: 1 }}>
               <p style={{

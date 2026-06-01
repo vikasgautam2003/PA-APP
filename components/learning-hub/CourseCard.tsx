@@ -17,6 +17,7 @@ const CARD_THEME: Record<CourseMeta["id"], { brand: string; brandSoft: string }>
   "github-actions": { brand: "#3FB950", brandSoft: "rgba(63, 185, 80, 0.14)" },
   "git-github": { brand: "#2188FF", brandSoft: "rgba(33, 136, 255, 0.14)" },
   "ai-engineer": { brand: "#A855F7", brandSoft: "rgba(168, 85, 247, 0.14)" },
+  "system-design": { brand: "#06B6D4", brandSoft: "rgba(6, 182, 212, 0.14)" },
 };
 
 const COURSE_MARK: Record<CourseMeta["id"], string> = {
@@ -24,6 +25,7 @@ const COURSE_MARK: Record<CourseMeta["id"], string> = {
   "github-actions": "GHA",
   "git-github": "GIT",
   "ai-engineer": "AI",
+  "system-design": "SD",
 };
 
 export default function CourseCard({ course, progress, onOpen, delayMs = 0 }: Props) {

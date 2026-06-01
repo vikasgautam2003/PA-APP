@@ -3,6 +3,7 @@ export * from "./dsa";
 export * from "./prompt";
 export * from "./finance";
 export * from "./planner";
+export * from "./courseplan";
 export * from "./aws";
 export * from "./gha";
 export * from "./git";

@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { getDb } from "@/lib/db";
 import { useAuthStore } from "@/store/authStore";
 import { AIE_PHASES } from "@/lib/aie-roadmap";
+import { SYSDES_PHASES } from "@/lib/sysdes-roadmap";
 import { AWS_DAYS } from "@/lib/aws-roadmap";
 import { GHA_CHAPTERS } from "@/lib/gha-roadmap";
 import { GIT_CHAPTERS } from "@/lib/git-roadmap";
 import { isAiePhaseComplete } from "@/hooks/useAie";
+import { isSysdesPhaseComplete } from "@/hooks/useSysdes";
 import { isAwsDayComplete } from "@/hooks/useAws";
 import { isGhaChapterComplete } from "@/hooks/useGha";
 import { isGitChapterComplete } from "@/hooks/useGit";
@@ -38,6 +40,7 @@ export function useAllCourseProgress(): {
   const { user } = useAuthStore();
   const [summaries, setSummaries] = useState<Record<CourseId, CourseProgressSummary>>({
     "ai-engineer": zero("ai-engineer", AIE_PHASES.length),
+    "system-design": zero("system-design", SYSDES_PHASES.length),
     aws: zero("aws", AWS_DAYS.length),
     "github-actions": zero("github-actions", GHA_CHAPTERS.length),
     "git-github": zero("git-github", GIT_CHAPTERS.length),
@@ -50,8 +53,9 @@ export function useAllCourseProgress(): {
     (async () => {
       const db = await getDb();
 
-      const [aieRows, awsRows, ghaRows, gitRows] = await Promise.all([
+      const [aieRows, sysdesRows, awsRows, ghaRows, gitRows] = await Promise.all([
         db.select<AieProgressRow[]>("SELECT * FROM ai_engineer_progress WHERE user_id = ?", [user.id]),
+        db.select<AieProgressRow[]>("SELECT * FROM system_design_progress WHERE user_id = ?", [user.id]),
         db.select<AwsProgressRow[]>("SELECT * FROM aws_progress WHERE user_id = ?", [user.id]),
         db.select<GhaProgressRow[]>("SELECT * FROM gha_progress WHERE user_id = ?", [user.id]),
         db.select<GitProgressRow[]>("SELECT * FROM git_progress WHERE user_id = ?", [user.id]),
@@ -62,6 +66,17 @@ export function useAllCourseProgress(): {
       const aieMap: Record<number, AiePhaseProgress> = {};
       for (const r of aieRows) {
         aieMap[r.phase_num] = {
+          phase: r.phase_num,
+          done: !!r.done,
+          sectionIndex: r.section_index ?? 0,
+          notes: r.notes ?? "",
+          completedAt: r.completed_at,
+        };
+      }
+
+      const sysdesMap: Record<number, AiePhaseProgress> = {};
+      for (const r of sysdesRows) {
+        sysdesMap[r.phase_num] = {
           phase: r.phase_num,
           done: !!r.done,
           sectionIndex: r.section_index ?? 0,
@@ -104,6 +119,7 @@ export function useAllCourseProgress(): {
       }
 
       const aieDone = AIE_PHASES.filter((p) => isAiePhaseComplete(p.num, aieMap)).length;
+      const sysdesDone = SYSDES_PHASES.filter((p) => isSysdesPhaseComplete(p.num, sysdesMap)).length;
       const awsDone = AWS_DAYS.filter((d) => isAwsDayComplete(d.day, awsMap)).length;
       const ghaDone = GHA_CHAPTERS.filter((c) => isGhaChapterComplete(c.num, ghaMap)).length;
       const gitDone = GIT_CHAPTERS.filter((c) => isGitChapterComplete(c.num, gitMap)).length;
@@ -111,6 +127,8 @@ export function useAllCourseProgress(): {
       setSummaries({
         "ai-engineer": makeSummary("ai-engineer", aieDone, AIE_PHASES.length,
           firstIncomplete(AIE_PHASES.map((p) => p.num), (n) => isAiePhaseComplete(n, aieMap))),
+        "system-design": makeSummary("system-design", sysdesDone, SYSDES_PHASES.length,
+          firstIncomplete(SYSDES_PHASES.map((p) => p.num), (n) => isSysdesPhaseComplete(n, sysdesMap))),
         aws: makeSummary("aws", awsDone, AWS_DAYS.length,
           firstIncomplete(AWS_DAYS.map((d) => d.day), (n) => isAwsDayComplete(n, awsMap))),
         "github-actions": makeSummary("github-actions", ghaDone, GHA_CHAPTERS.length,

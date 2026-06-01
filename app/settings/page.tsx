@@ -318,7 +318,7 @@ export default function SettingsPage() {
                   <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent-text)", background: "var(--accent-glow)", padding: "2px 8px", borderRadius: 99 }}>WEB SEARCH</span>
                 </div>
                 <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 14 }}>
-                  Enables the FDE chatbot to search the web. Get a key at serpapi.com (100 free searches/month).
+                  Enables the in-course chatbot to search the web. Get a key at serpapi.com (100 free searches/month).
                 </p>
                 <input
                   type="password"

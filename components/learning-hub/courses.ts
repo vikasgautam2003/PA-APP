@@ -29,6 +29,17 @@ export const COURSES: CourseMeta[] = [
     standaloneRoute: "/ai-engineer",
   },
   {
+    id: "system-design",
+    title: "System Design Master Roadmap",
+    tagline: "Crack every interview · basics → billion-scale",
+    description:
+      "15 chapters: networking, databases, caching, queues, distributed systems, real-world designs (Twitter, Uber, YouTube) + the interview framework.",
+    units: 15,
+    unitsLabel: "chapters",
+    durationLabel: "self-paced",
+    standaloneRoute: "/system-design",
+  },
+  {
     id: "aws",
     title: "AWS Solutions Architect",
     tagline: "SAA-C03 + production skills",

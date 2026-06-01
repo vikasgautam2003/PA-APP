@@ -4,7 +4,7 @@
 // CourseCard can choose to paint them brand-coloured (on the hub index) or
 // app-accent (everywhere else).
 
-export type CourseIconId = "ai-engineer" | "aws" | "git-github" | "github-actions";
+export type CourseIconId = "ai-engineer" | "system-design" | "aws" | "git-github" | "github-actions";
 
 interface IconProps {
   size?: number;
@@ -124,10 +124,38 @@ export function GitHubActionsMark({ size = 64 }: IconProps) {
   );
 }
 
+/**
+ * System Design — stacked distributed-systems nodes: three server tiers
+ * connected vertically, suggesting layered architecture / scale.
+ * Renders in currentColor.
+ */
+export function SystemDesignMark({ size = 64 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 80 80" fill="none" aria-hidden>
+      {/* top tier — single client/LB node */}
+      <rect x="34" y="12" width="12" height="12" rx="3" fill="currentColor" />
+      {/* middle tier — two app server nodes */}
+      <rect x="18" y="34" width="12" height="12" rx="3" stroke="currentColor" strokeWidth={3} fill="none" />
+      <rect x="50" y="34" width="12" height="12" rx="3" stroke="currentColor" strokeWidth={3} fill="none" />
+      {/* bottom tier — two data nodes */}
+      <rect x="18" y="56" width="12" height="12" rx="3" fill="currentColor" />
+      <rect x="50" y="56" width="12" height="12" rx="3" fill="currentColor" />
+      {/* connecting edges */}
+      <path d="M40 24 L24 34" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />
+      <path d="M40 24 L56 34" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />
+      <path d="M24 46 L24 56" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />
+      <path d="M56 46 L56 56" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />
+      <path d="M24 46 L56 56" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" opacity={0.5} />
+    </svg>
+  );
+}
+
 export function CourseIcon({ id, size }: { id: CourseIconId; size?: number }) {
   switch (id) {
     case "ai-engineer":
       return <AiEngineerMark size={size} />;
+    case "system-design":
+      return <SystemDesignMark size={size} />;
     case "aws":
       return <AwsLogo size={size} />;
     case "git-github":

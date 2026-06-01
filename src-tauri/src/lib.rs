@@ -308,6 +308,17 @@ pub fn run() {
                 ).execute(&pool).await.expect("Failed to create planner_week_plans");
 
                 sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS planner_course_plans (
+                        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id      INTEGER REFERENCES users(id),
+                        week_start   DATE NOT NULL,
+                        plan_json    TEXT NOT NULL,
+                        generated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, week_start)
+                    )"
+                ).execute(&pool).await.expect("Failed to create planner_course_plans");
+
+                sqlx::query(
                     "CREATE TABLE IF NOT EXISTS question_notes (
                         id          INTEGER PRIMARY KEY AUTOINCREMENT,
                         user_id     INTEGER REFERENCES users(id),
@@ -443,6 +454,20 @@ pub fn run() {
                         UNIQUE(user_id, phase_num)
                     )"
                 ).execute(&pool).await.expect("Failed to create ai_engineer_progress table");
+
+                sqlx::query(
+                    "CREATE TABLE IF NOT EXISTS system_design_progress (
+                        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id       INTEGER REFERENCES users(id),
+                        phase_num     INTEGER NOT NULL,
+                        done          INTEGER DEFAULT 0,
+                        section_index INTEGER DEFAULT 0,
+                        notes         TEXT DEFAULT '',
+                        completed_at  DATETIME,
+                        updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(user_id, phase_num)
+                    )"
+                ).execute(&pool).await.expect("Failed to create system_design_progress table");
 
                 app.manage(AppState { db: pool });
             });

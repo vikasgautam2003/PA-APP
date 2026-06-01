@@ -30,7 +30,7 @@ async function fetchSerp(params: Record<string, string>): Promise<SerpRaw> {
   return data;
 }
 
-export async function searchAll(query: string): Promise<FdeChatSources> {
+export async function searchAll(query: string): Promise<AwsChatSources> {
   // Run the three engines in parallel; tolerate partial failures.
   const [webR, imagesR, videosR] = await Promise.allSettled([
     fetchSerp({ engine: "google", q: query, num: "6" }),
@@ -38,7 +38,7 @@ export async function searchAll(query: string): Promise<FdeChatSources> {
     fetchSerp({ engine: "google_videos", q: query, num: "5" }),
   ]);
 
-  const out: FdeChatSources = { web: [], images: [], videos: [] };
+  const out: AwsChatSources = { web: [], images: [], videos: [] };
 
   if (webR.status === "fulfilled") {
     const w = webR.value;
@@ -53,7 +53,7 @@ export async function searchAll(query: string): Promise<FdeChatSources> {
     out.web = (w.organic_results ?? [])
       .filter((r): r is { title: string; link: string; snippet?: string } =>
         !!r.title && !!r.link)
-      .map<FdeWebResult>((r) => ({
+      .map<AwsWebResult>((r) => ({
         title: r.title, link: r.link, snippet: r.snippet ?? "",
       }))
       .slice(0, 6);
@@ -63,7 +63,7 @@ export async function searchAll(query: string): Promise<FdeChatSources> {
     out.images = (imagesR.value.image_results ?? [])
       .filter((r): r is { thumbnail: string; link: string; title?: string; original?: string; source?: string } =>
         !!r.thumbnail && !!r.link)
-      .map<FdeImageResult>((r) => ({
+      .map<AwsImageResult>((r) => ({
         title: r.title ?? "",
         link: r.link,
         thumbnail: r.thumbnail,
@@ -74,7 +74,7 @@ export async function searchAll(query: string): Promise<FdeChatSources> {
   }
 
   if (videosR.status === "fulfilled") {
-    const vids: FdeVideoResult[] = [];
+    const vids: AwsVideoResult[] = [];
     for (const r of videosR.value.video_results ?? []) {
       if (!r.title || !r.link) continue;
       vids.push({
@@ -94,7 +94,7 @@ export async function searchAll(query: string): Promise<FdeChatSources> {
   return out;
 }
 
-export function formatSourcesForPrompt(s: FdeChatSources): string {
+export function formatSourcesForPrompt(s: AwsChatSources): string {
   const parts: string[] = [];
 
   if (s.answerBox?.snippet) {
@@ -120,6 +120,6 @@ export function formatSourcesForPrompt(s: FdeChatSources): string {
   return parts.length ? `Search context:\n\n${parts.join("\n\n---\n\n")}` : "";
 }
 
-export function emptySources(): FdeChatSources {
+export function emptySources(): AwsChatSources {
   return { web: [], images: [], videos: [] };
 }

@@ -3,10 +3,10 @@
 import { useMemo } from "react";
 import PhaseCard from "@/components/ai-engineer/PhaseCard";
 import PhaseSidebar from "@/components/ai-engineer/PhaseSidebar";
-import { useAie, isAiePhaseComplete, findCurrentAiePhase } from "@/hooks/useAie";
-import { AIE_PHASES, getAiePhase } from "@/lib/aie-roadmap";
+import { useSysdes, isSysdesPhaseComplete, findCurrentSysdesPhase } from "@/hooks/useSysdes";
+import { SYSDES_PHASES, getSysdesPhase } from "@/lib/sysdes-roadmap";
 
-export default function AiEngineerShell() {
+export default function SystemDesignShell() {
   const {
     selectedPhase,
     setSelectedPhase,
@@ -15,17 +15,17 @@ export default function AiEngineerShell() {
     toggleDone,
     setSectionIndex,
     saveNotes,
-  } = useAie();
+  } = useSysdes();
 
-  const phase = useMemo(() => getAiePhase(selectedPhase), [selectedPhase]);
-  const currentPhase = useMemo(() => findCurrentAiePhase(progress), [progress]);
+  const phase = useMemo(() => getSysdesPhase(selectedPhase), [selectedPhase]);
+  const currentPhase = useMemo(() => findCurrentSysdesPhase(progress), [progress]);
 
-  const idx = AIE_PHASES.findIndex((p) => p.num === selectedPhase);
-  const prev = idx > 0 ? AIE_PHASES[idx - 1].num : null;
-  const next = idx >= 0 && idx < AIE_PHASES.length - 1 ? AIE_PHASES[idx + 1].num : null;
+  const idx = SYSDES_PHASES.findIndex((p) => p.num === selectedPhase);
+  const prev = idx > 0 ? SYSDES_PHASES[idx - 1].num : null;
+  const next = idx >= 0 && idx < SYSDES_PHASES.length - 1 ? SYSDES_PHASES[idx + 1].num : null;
 
   const phaseProgress = progress[selectedPhase];
-  const phaseDone = !!phase && isAiePhaseComplete(phase.num, progress);
+  const phaseDone = !!phase && isSysdesPhaseComplete(phase.num, progress);
 
   if (isLoading) {
     return (
@@ -39,7 +39,7 @@ export default function AiEngineerShell() {
     );
   }
 
-  if (!phase) return <p style={{ color: "var(--text-muted)" }}>Phase not found.</p>;
+  if (!phase) return <p style={{ color: "var(--text-muted)" }}>Chapter not found.</p>;
 
   return (
     <div style={{
@@ -50,12 +50,12 @@ export default function AiEngineerShell() {
     }}>
       <aside style={{ position: "sticky", top: 4 }}>
         <PhaseSidebar
-          phases={AIE_PHASES}
+          phases={SYSDES_PHASES}
           selectedPhase={selectedPhase}
           progress={progress}
           onSelect={setSelectedPhase}
-          isComplete={isAiePhaseComplete}
-          headerLabel="12 phases · capstone · appendix"
+          isComplete={isSysdesPhaseComplete}
+          headerLabel="15 chapters · interview-ready"
         />
       </aside>
 
@@ -65,7 +65,7 @@ export default function AiEngineerShell() {
           padding: "0 4px",
         }}>
           <button onClick={() => prev && setSelectedPhase(prev)} disabled={!prev} style={navBtn(!!prev)}>
-            ← {prev ? AIE_PHASES.find((p) => p.num === prev)?.phaseLabel : "—"}
+            ← {prev ? SYSDES_PHASES.find((p) => p.num === prev)?.phaseLabel : "—"}
           </button>
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
@@ -86,7 +86,7 @@ export default function AiEngineerShell() {
             )}
           </div>
           <button onClick={() => next && setSelectedPhase(next)} disabled={!next} style={navBtn(!!next)}>
-            {next ? AIE_PHASES.find((p) => p.num === next)?.phaseLabel : "—"} →
+            {next ? SYSDES_PHASES.find((p) => p.num === next)?.phaseLabel : "—"} →
           </button>
         </div>
 
@@ -96,6 +96,7 @@ export default function AiEngineerShell() {
           onToggleDone={() => void toggleDone(phase.num)}
           onSectionChange={(i) => void setSectionIndex(phase.num, i)}
           onSaveNotes={(notes) => void saveNotes(phase.num, notes)}
+          unitNoun="chapter"
         />
       </div>
     </div>

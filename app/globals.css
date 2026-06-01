@@ -316,6 +316,13 @@ html, body {
   --course-brand-bg-2:   #221033;
 }
 
+.course-theme-system-design {
+  --course-brand:        #06B6D4;
+  --course-brand-dim:    #0891B2;
+  --course-brand-bg:     #07171B;
+  --course-brand-bg-2:   #0B2630;
+}
+
 /* GitHub-specific animations */
 @keyframes gha-fade-up {
   from { opacity: 0; transform: translateY(10px); }

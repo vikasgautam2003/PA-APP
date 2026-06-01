@@ -54,7 +54,7 @@ export default function DashboardPage() {
   const { currentPlan, markItemDone } = usePlanner();
   const { emails: gmailEmails, loading: gmailLoading, error: gmailError, refetch: refetchGmail } = useGmail();
   const { events: calEvents, loading: calLoading, noScope: calNoScope, isRefreshing: calRefreshing, refetch: refetchCal } = useCalendar();
-  const { gmailToken, notifEnabled, notifMeetingAlert, notifDsaNudgeTime, notifBriefTime } = useSettingsStore();
+  const { gmailToken, notifEnabled, notifMeetingAlert } = useSettingsStore();
   const [brief, setBrief]         = useState<string>(() => {
     try { return localStorage.getItem("ares-brief-text") ?? ""; } catch { return ""; }
   });
@@ -267,13 +267,11 @@ Write today's brief.`;
       void runNotificationTick({
         userId: user.id,
         meetingAlert: notifMeetingAlert,
-        dsaNudgeTime: notifDsaNudgeTime,
-        briefTime: notifBriefTime,
         calEvents,
       });
     }, 60_000);
     return () => clearInterval(id);
-  }, [user, notifEnabled, notifMeetingAlert, notifDsaNudgeTime, notifBriefTime, calEvents]);
+  }, [user, notifEnabled, notifMeetingAlert, calEvents]);
 
   async function handleTick(item: DayPlanItem) {
     const key = `${item.type}-${item.id}`;

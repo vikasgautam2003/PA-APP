@@ -5,14 +5,14 @@ import PageWrapper from "@/components/layout/PageWrapper";
 import PhaseCard from "@/components/ai-engineer/PhaseCard";
 import PhaseSidebar from "@/components/ai-engineer/PhaseSidebar";
 import {
-  useAie,
-  computeAieOverallProgress,
-  isAiePhaseComplete,
-  findCurrentAiePhase,
-} from "@/hooks/useAie";
-import { AIE_PHASES, getAiePhase } from "@/lib/aie-roadmap";
+  useSysdes,
+  computeSysdesOverallProgress,
+  isSysdesPhaseComplete,
+  findCurrentSysdesPhase,
+} from "@/hooks/useSysdes";
+import { SYSDES_PHASES, getSysdesPhase } from "@/lib/sysdes-roadmap";
 
-export default function AiEngineerPage() {
+export default function SystemDesignPage() {
   const {
     selectedPhase,
     setSelectedPhase,
@@ -21,24 +21,24 @@ export default function AiEngineerPage() {
     toggleDone,
     setSectionIndex,
     saveNotes,
-  } = useAie();
+  } = useSysdes();
 
-  const phase = useMemo(() => getAiePhase(selectedPhase), [selectedPhase]);
-  const overall = useMemo(() => computeAieOverallProgress(progress), [progress]);
-  const currentPhase = useMemo(() => findCurrentAiePhase(progress), [progress]);
+  const phase = useMemo(() => getSysdesPhase(selectedPhase), [selectedPhase]);
+  const overall = useMemo(() => computeSysdesOverallProgress(progress), [progress]);
+  const currentPhase = useMemo(() => findCurrentSysdesPhase(progress), [progress]);
 
-  const idx = AIE_PHASES.findIndex((p) => p.num === selectedPhase);
-  const prev = idx > 0 ? AIE_PHASES[idx - 1].num : null;
-  const next = idx >= 0 && idx < AIE_PHASES.length - 1 ? AIE_PHASES[idx + 1].num : null;
+  const idx = SYSDES_PHASES.findIndex((p) => p.num === selectedPhase);
+  const prev = idx > 0 ? SYSDES_PHASES[idx - 1].num : null;
+  const next = idx >= 0 && idx < SYSDES_PHASES.length - 1 ? SYSDES_PHASES[idx + 1].num : null;
 
   const isOnCurrent = selectedPhase === currentPhase;
   const phaseProgress = progress[selectedPhase];
-  const phaseDone = !!phase && isAiePhaseComplete(phase.num, progress);
+  const phaseDone = !!phase && isSysdesPhaseComplete(phase.num, progress);
 
   return (
     <PageWrapper
-      title="AI Engineer"
-      subtitle="12 phases · RAG + Agents + Evals + production · build your own ChatGPT"
+      title="System Design"
+      subtitle="15 chapters · networking → databases → distributed systems → real designs"
       action={
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <div style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: 4 }}>
@@ -46,7 +46,7 @@ export default function AiEngineerPage() {
               fontSize: 9, fontWeight: 700, letterSpacing: "0.18em",
               textTransform: "uppercase", color: "var(--text-faint)",
             }}>
-              {overall.done} / {AIE_PHASES.length} phases
+              {overall.done} / {SYSDES_PHASES.length} chapters
             </span>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
               <span style={{
@@ -92,7 +92,7 @@ export default function AiEngineerPage() {
           Loading
         </div>
       ) : !phase ? (
-        <p style={{ color: "var(--text-muted)" }}>Phase not found.</p>
+        <p style={{ color: "var(--text-muted)" }}>Chapter not found.</p>
       ) : (
         <div style={{
           display: "grid",
@@ -103,12 +103,12 @@ export default function AiEngineerPage() {
         }}>
           <aside style={{ position: "sticky", top: 4 }}>
             <PhaseSidebar
-              phases={AIE_PHASES}
+              phases={SYSDES_PHASES}
               selectedPhase={selectedPhase}
               progress={progress}
               onSelect={setSelectedPhase}
-              isComplete={isAiePhaseComplete}
-              headerLabel="12 phases · capstone · appendix"
+              isComplete={isSysdesPhaseComplete}
+              headerLabel="15 chapters · interview-ready"
             />
           </aside>
 
@@ -122,7 +122,7 @@ export default function AiEngineerPage() {
                 disabled={!prev}
                 style={navBtn(!!prev)}
               >
-                ← {prev ? AIE_PHASES.find((p) => p.num === prev)?.phaseLabel : "—"}
+                ← {prev ? SYSDES_PHASES.find((p) => p.num === prev)?.phaseLabel : "—"}
               </button>
               <div style={{
                 display: "flex", alignItems: "center", gap: 8,
@@ -147,7 +147,7 @@ export default function AiEngineerPage() {
                 disabled={!next}
                 style={navBtn(!!next)}
               >
-                {next ? AIE_PHASES.find((p) => p.num === next)?.phaseLabel : "—"} →
+                {next ? SYSDES_PHASES.find((p) => p.num === next)?.phaseLabel : "—"} →
               </button>
             </div>
 
@@ -157,6 +157,7 @@ export default function AiEngineerPage() {
               onToggleDone={() => void toggleDone(phase.num)}
               onSectionChange={(i) => void setSectionIndex(phase.num, i)}
               onSaveNotes={(notes) => void saveNotes(phase.num, notes)}
+              unitNoun="chapter"
             />
           </div>
         </div>

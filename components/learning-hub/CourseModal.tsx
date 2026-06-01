@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { CourseIcon } from "./icons";
 import { getCourse, type CourseId } from "./courses";
 import AiEngineerShell from "./shells/AiEngineerShell";
+import SystemDesignShell from "./shells/SystemDesignShell";
 import AwsShell from "./shells/AwsShell";
 import GitShell from "./shells/GitShell";
 import GhaShell from "./shells/GhaShell";
@@ -148,6 +149,7 @@ export default function CourseModal({ courseId, onClose }: Props) {
           background: "var(--bg-base)",
         }}>
           {courseId === "ai-engineer" && <AiEngineerShell />}
+          {courseId === "system-design" && <SystemDesignShell />}
           {courseId === "aws" && <AwsShell />}
           {courseId === "github-actions" && <GhaShell />}
           {courseId === "git-github" && <GitShell />}

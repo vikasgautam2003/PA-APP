@@ -390,7 +390,7 @@ export default function PhaseReader({ phase, sectionIndex, onSectionChange }: Pr
             if (idx < total - 1) e.currentTarget.style.transform = "translateY(0) scale(1)";
           }}
         >
-          {idx >= total - 1 ? "Phase complete ✓" : "Next →"}
+          {idx >= total - 1 ? "Complete ✓" : "Next →"}
         </button>
       </div>
     </div>

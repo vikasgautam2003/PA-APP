@@ -8,7 +8,7 @@ import CourseModal from "@/components/learning-hub/CourseModal";
 import { COURSES, type CourseId } from "@/components/learning-hub/courses";
 import { useAllCourseProgress } from "@/components/learning-hub/useCourseProgress";
 
-const VALID_IDS: CourseId[] = ["ai-engineer", "aws", "github-actions", "git-github"];
+const VALID_IDS: CourseId[] = ["ai-engineer", "system-design", "aws", "github-actions", "git-github"];
 
 export default function LearningHubPage() {
   const router = useRouter();

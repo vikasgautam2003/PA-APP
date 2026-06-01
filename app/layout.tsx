@@ -8,6 +8,7 @@ import { loadGmailCache } from "@/store/gmailCacheStore";
 import { loadCalendarCache } from "@/store/calendarCacheStore";
 import Sidebar from "@/components/layout/Sidebar";
 import QuickCapture from "@/components/QuickCapture";
+import ErrorToaster from "@/components/ErrorToaster";
 import "./globals.css";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -55,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }
 
   if (!isAuthenticated) {
-    return <html lang="en"><body style={{ background: "var(--bg-base)" }}>{children}</body></html>;
+    return <html lang="en"><body style={{ background: "var(--bg-base)" }}>{children}<ErrorToaster /></body></html>;
   }
 
   return (
@@ -66,6 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <QuickCapture open={quickCaptureOpen} onClose={() => setQuickCaptureOpen(false)} />
+        <ErrorToaster />
       </body>
     </html>
   );
